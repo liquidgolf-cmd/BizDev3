@@ -23,6 +23,15 @@ export async function POST(
       );
     }
 
+    // Check if Anthropic API key is set
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is not set');
+      return NextResponse.json(
+        { error: 'Server configuration error: Anthropic API key not configured' },
+        { status: 500 }
+      );
+    }
+
     // Get session from database
     const dbSession = await getSession(sessionId);
     if (!dbSession || dbSession.userId !== session.user.email) {
@@ -31,7 +40,7 @@ export async function POST(
 
     // Create agent and restore state
     const agent = new CoachingAgent(sessionId);
-    agent.messages = dbSession.messages;
+    agent.messages = dbSession.messages || [];
     agent.outline = dbSession.outline;
     agent.context = dbSession.extractedContext;
 
