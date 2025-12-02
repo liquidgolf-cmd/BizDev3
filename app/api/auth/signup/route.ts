@@ -37,10 +37,13 @@ export async function POST(request: NextRequest) {
     });
 
     // Create user record in Firestore
+    const now = new Date();
     await createUserInDb({
       id: userRecord.uid,
       email: userRecord.email!,
       name: name || userRecord.displayName || userRecord.email?.split('@')[0] || 'User',
+      createdAt: now,
+      updatedAt: now,
     });
 
     return NextResponse.json({
