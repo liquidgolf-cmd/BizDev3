@@ -40,12 +40,25 @@ export async function callWithModelFallback<T>(
       // Log detailed error information
       const errorStatus = error?.status || error?.statusCode;
       const errorMessage = error?.message || String(error);
+      
+      // Check if error message contains "not_found_error" or "404" (Anthropic API format)
+      const isNotFoundError = errorMessage.includes('not_found_error') || 
+                             errorMessage.includes('model:') ||
+                             errorStatus === 404;
+      
       console.warn(`[Model Fallback] Model ${model} failed:`, {
         status: errorStatus,
         message: errorMessage,
+        isNotFoundError,
         error: error,
       });
       errors.push({ model, error: error as Error });
+      
+      // If it's a model not found error (404), try next model
+      if (isNotFoundError) {
+        console.log(`[Model Fallback] Model ${model} not found, trying next model...`);
+        continue; // Try next model
+      }
       
       // Only try next model if it's a model-specific error
       // Status codes that indicate model issues: 400 (bad request), 404 (not found), 429 (rate limit)
@@ -58,6 +71,10 @@ export async function callWithModelFallback<T>(
         // If it's a server error (500+), only retry if it's a 503 (service unavailable)
         if (errorStatus >= 500 && errorStatus !== 503) {
           throw error;
+        }
+        // For 404, 400, 429 - continue to next model
+        if ([400, 404, 429].includes(errorStatus)) {
+          continue;
         }
       }
       
