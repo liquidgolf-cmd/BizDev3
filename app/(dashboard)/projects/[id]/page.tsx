@@ -4,13 +4,16 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Project } from '@/types/project';
 import Link from 'next/link';
+import { useToast } from '@/components/ui/ToastContainer';
 
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const projectId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   useEffect(() => {
     fetchProject();
@@ -46,9 +49,36 @@ export default function ProjectDetailPage() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      toast.showSuccess('Brief downloaded successfully');
     } catch (error) {
       console.error('Error downloading brief:', error);
-      alert('Failed to download brief. Please try again.');
+      toast.showError('Failed to download brief. Please try again.');
+    }
+  }
+
+  async function handleDuplicate() {
+    if (!project) return;
+    
+    setIsDuplicating(true);
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'duplicate' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to duplicate project');
+      }
+
+      const data = await response.json();
+      toast.showSuccess('Project duplicated successfully');
+      router.push(`/projects/${data.project.id}`);
+    } catch (error) {
+      console.error('Error duplicating project:', error);
+      toast.showError('Failed to duplicate project. Please try again.');
+    } finally {
+      setIsDuplicating(false);
     }
   }
 
@@ -177,6 +207,13 @@ export default function ProjectDetailPage() {
                 Download Cursor Brief
               </button>
             )}
+            <button
+              onClick={handleDuplicate}
+              disabled={isDuplicating}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDuplicating ? 'Duplicating...' : 'Duplicate Project'}
+            </button>
           </div>
         </div>
       </main>

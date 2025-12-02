@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import CoachingScreen from '@/components/coaching/CoachingScreen';
+import { useToast } from '@/components/ui/ToastContainer';
 
 export default function NewCoachingPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const toast = useToast();
 
   useEffect(() => {
     startSession();
@@ -37,7 +39,9 @@ export default function NewCoachingPage() {
     } catch (error: any) {
       console.error('Error starting session:', error);
       setIsStarting(false);
-      setError(error.message || 'Failed to start coaching session. Please try again.');
+      const errorMessage = error.message || 'Failed to start coaching session. Please try again.';
+      setError(errorMessage);
+      toast.showError(errorMessage);
     }
   }
 

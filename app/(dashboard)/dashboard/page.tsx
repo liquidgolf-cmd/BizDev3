@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useProjects } from '@/hooks/useProjects';
 import { useDashboard } from '@/hooks/useDashboard';
 import ProjectGrid from '@/components/dashboard/ProjectGrid';
+import ActivityFeed from '@/components/dashboard/ActivityFeed';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 
@@ -87,7 +88,14 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <ProjectGrid projects={filteredProjects} isLoading={isLoading} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <ProjectGrid projects={filteredProjects} isLoading={isLoading} />
+          </div>
+          <div className="lg:col-span-1">
+            <ActivityFeed projects={projects} limit={5} />
+          </div>
+        </div>
       </main>
     </div>
   );

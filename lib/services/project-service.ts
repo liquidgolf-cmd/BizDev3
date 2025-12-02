@@ -39,5 +39,26 @@ export class ProjectService {
     const project = await getProject(projectId);
     return project?.userId === userId;
   }
+
+  async duplicateProject(projectId: string, userId: string, newName?: string): Promise<Project> {
+    const originalProject = await getProject(projectId);
+    if (!originalProject) {
+      throw new Error('Project not found');
+    }
+    if (originalProject.userId !== userId) {
+      throw new Error('Unauthorized');
+    }
+
+    const duplicatedProject = await createProject({
+      userId,
+      name: newName || `${originalProject.name} (Copy)`,
+      status: 'coaching',
+      outline: originalProject.outline,
+      context: originalProject.context,
+      briefGenerated: false,
+    });
+
+    return duplicatedProject;
+  }
 }
 

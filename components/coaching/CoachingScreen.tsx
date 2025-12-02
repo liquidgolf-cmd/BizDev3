@@ -5,6 +5,7 @@ import { CoachMessage, ProjectOutline } from '@/types/coaching';
 import QuickReplyButtons from './QuickReplyButtons';
 import OutlinePreview from './OutlinePreview';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/components/ui/ToastContainer';
 
 interface CoachingScreenProps {
   sessionId: string | null;
@@ -18,6 +19,7 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
   const [outline, setOutline] = useState<ProjectOutline | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const toast = useToast();
 
   useEffect(() => {
     if (sessionId) {
@@ -85,13 +87,7 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
       console.error('Error sending message:', error);
       // Remove the user message that failed
       setMessages(prev => prev.slice(0, -1));
-      // Show error message
-      const errorMessage: CoachMessage = {
-        role: 'coach',
-        content: `Sorry, I encountered an error: ${error.message || 'Please try again.'}`,
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      toast.showError(error.message || 'Failed to send message. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +124,7 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
       }
     } catch (error: any) {
       console.error('Error approving outline:', error);
-      alert(`Failed to approve outline: ${error.message || 'Please try again.'}`);
+      toast.showError(error.message || 'Failed to approve outline. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -167,7 +163,7 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
       setMessages(prev => [...prev, coachMessage]);
     } catch (error: any) {
       console.error('Error revising outline:', error);
-      alert(`Failed to revise outline: ${error.message || 'Please try again.'}`);
+      toast.showError(error.message || 'Failed to revise outline. Please try again.');
     } finally {
       setIsLoading(false);
     }

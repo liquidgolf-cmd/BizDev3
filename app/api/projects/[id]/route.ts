@@ -101,3 +101,36 @@ export async function DELETE(
   }
 }
 
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const { action, newName } = await request.json();
+
+    if (action === 'duplicate') {
+      const projectService = new ProjectService();
+      const duplicatedProject = await projectService.duplicateProject(
+        id,
+        session.user.email,
+        newName
+      );
+      return NextResponse.json({ success: true, project: duplicatedProject });
+    }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+  } catch (error: any) {
+    console.error('Error duplicating project:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to duplicate project' },
+      { status: 500 }
+    );
+  }
+}
+

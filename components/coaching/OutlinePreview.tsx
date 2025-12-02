@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ProjectOutline } from '@/types/coaching';
+import { useToast } from '@/components/ui/ToastContainer';
 
 interface OutlinePreviewProps {
   outline: ProjectOutline;
@@ -14,6 +15,7 @@ export default function OutlinePreview({ outline, onApprove, onRevise, isLoading
   const [projectName, setProjectName] = useState('');
   const [feedback, setFeedback] = useState('');
   const [showRevise, setShowRevise] = useState(false);
+  const toast = useToast();
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mt-6">
@@ -89,7 +91,7 @@ export default function OutlinePreview({ outline, onApprove, onRevise, isLoading
             <button
               onClick={() => {
                 if (!projectName.trim()) {
-                  alert('Please enter a project name');
+                  toast.showWarning('Please enter a project name');
                   return;
               }
                 onApprove(projectName.trim());
