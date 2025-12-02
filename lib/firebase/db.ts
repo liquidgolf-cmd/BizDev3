@@ -168,27 +168,37 @@ export async function createSession(session: Omit<CoachingSession, 'id' | 'creat
 }
 
 export async function getSession(sessionId: string): Promise<CoachingSession | null> {
-  const db = getDb();
-  const sessionRef = db.collection(sessionsCollection).doc(sessionId);
-  const sessionSnap = await sessionRef.get();
-  
-  if (!sessionSnap.exists) {
-    return null;
+  try {
+    const db = getDb();
+    const sessionRef = db.collection(sessionsCollection).doc(sessionId);
+    const sessionSnap = await sessionRef.get();
+    
+    if (!sessionSnap.exists) {
+      return null;
+    }
+    
+    const data = sessionSnap.data();
+    if (!data) {
+      return null;
+    }
+    
+    return {
+      ...data,
+      id: sessionSnap.id,
+      messages: (data?.messages || []).map((msg: any) => ({
+        ...msg,
+        timestamp: convertTimestamp(msg.timestamp),
+      })),
+      outline: data?.outline || null,
+      extractedContext: data?.extractedContext || null,
+      status: data?.status || 'in_progress',
+      createdAt: convertTimestamp(data?.createdAt),
+      updatedAt: convertTimestamp(data?.updatedAt),
+    } as CoachingSession;
+  } catch (error: any) {
+    console.error('Error getting session:', error);
+    throw new Error(`Failed to get session: ${error.message}`);
   }
-  
-  const data = sessionSnap.data();
-  return {
-    ...data,
-    id: sessionSnap.id,
-    messages: (data?.messages || []).map((msg: any) => ({
-      ...msg,
-      timestamp: convertTimestamp(msg.timestamp),
-    })),
-    outline: data?.outline || null,
-    extractedContext: data?.extractedContext || null,
-    createdAt: convertTimestamp(data?.createdAt),
-    updatedAt: convertTimestamp(data?.updatedAt),
-  } as CoachingSession;
 }
 
 export async function updateSession(sessionId: string, updates: Partial<CoachingSession>): Promise<void> {

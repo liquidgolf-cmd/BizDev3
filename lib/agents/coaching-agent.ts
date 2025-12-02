@@ -133,10 +133,15 @@ export class CoachingAgent {
     // Add assistant message to history
     this.messages.push({
       role: 'coach',
-      content: result.content,
+      content: result.content || 'No response generated',
       quickReplies: result.quickReplies,
       timestamp: new Date(),
     });
+
+    // Ensure we always return some content
+    if (!result.content) {
+      result.content = 'I apologize, but I encountered an issue processing your message. Please try again.';
+    }
 
     return result;
   }

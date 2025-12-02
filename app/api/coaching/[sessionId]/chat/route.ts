@@ -53,10 +53,19 @@ export async function POST(
     });
 
     return NextResponse.json(response);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in coaching chat:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code,
+      name: error?.name,
+    });
     return NextResponse.json(
-      { error: 'Failed to process message' },
+      { 
+        error: 'Failed to process message',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 }
     );
   }
