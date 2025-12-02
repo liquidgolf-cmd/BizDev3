@@ -18,67 +18,78 @@ A Business Development web app that helps users create strategic web project out
 - **Authentication**: NextAuth.js with Google OAuth
 - **AI**: Anthropic Claude API (Sonnet 4.5)
 
-## Setup Instructions
+## Deployment
 
-### 1. Install Dependencies
+This application is designed to run exclusively on Vercel. All setup and configuration is done through the Vercel dashboard.
 
-```bash
-npm install
-```
+### 1. Connect to Vercel
+
+1. Push your code to GitHub (repository: https://github.com/liquidgolf-cmd/BizDev3)
+2. Go to [vercel.com](https://vercel.com) and sign in with GitHub
+3. Click "Add New Project" and select the `BizDev3` repository
+4. Vercel will auto-detect Next.js - click "Deploy"
 
 ### 2. Environment Variables
 
-Create a `.env.local` file in the root directory:
+Add all environment variables in Vercel Dashboard → Settings → Environment Variables:
 
 ```env
-# Firebase Configuration
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+# NextAuth (REQUIRED)
+AUTH_SECRET=your-secret-key-here
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Firebase Client (Public)
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key_here
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 # Firebase Admin (Server-side)
-FIREBASE_ADMIN_PROJECT_ID=your_project_id
-FIREBASE_ADMIN_PRIVATE_KEY=your_private_key
-FIREBASE_ADMIN_CLIENT_EMAIL=your_client_email
-
-# NextAuth
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_secret_key
-
-# Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+FIREBASE_ADMIN_PROJECT_ID=your-project-id
+FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour private key here\n-----END PRIVATE KEY-----\n"
+FIREBASE_ADMIN_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
 
 # Anthropic Claude API
-ANTHROPIC_API_KEY=your_anthropic_api_key
+ANTHROPIC_API_KEY=sk-ant-api03-...
+
+# NextAuth URL (Set to your Vercel domain)
+NEXTAUTH_URL=https://your-app-name.vercel.app
 ```
+
+**Important:** Add variables to **Production**, **Preview**, and **Development** environments.
 
 ### 3. Firebase Setup
 
 1. Create a Firebase project at [Firebase Console](https://console.firebase.google.com/)
 2. Enable Firestore Database
-3. Set up Firebase Admin SDK:
+3. Enable Authentication (Email/Password and Google providers)
+4. Set up Firebase Admin SDK:
    - Go to Project Settings > Service Accounts
    - Generate a new private key
-   - Add the credentials to your `.env.local`
+   - Extract credentials for Vercel environment variables
+5. Deploy Firestore security rules using the `firestore.rules` file
 
 ### 4. Google OAuth Setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create OAuth 2.0 credentials
-3. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
-4. Add credentials to `.env.local`
+3. Add authorized redirect URI: `https://your-app-name.vercel.app/api/auth/callback/google`
+   - Replace `your-app-name` with your actual Vercel app name
+4. Add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` to Vercel environment variables
 
-### 5. Run Development Server
+### 5. Deploy
 
-```bash
-npm run dev
-```
+After adding all environment variables:
+1. Go to Vercel Dashboard → Deployments
+2. Click "Redeploy" on the latest deployment
+3. Or push a new commit to trigger automatic deployment
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+For detailed deployment instructions, see [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)
 
 ## Project Structure
 
@@ -103,16 +114,10 @@ bizdev-app/
 └── public/                 # Static assets
 ```
 
-## Deployment to Vercel
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add all environment variables in Vercel dashboard
-4. Deploy!
 
 ## Usage
 
-1. **Sign In**: Use Google OAuth to authenticate
+1. **Sign In**: Use Google OAuth or Email/Password to authenticate
 2. **Start Coaching**: Click "New Project" to begin a coaching session
 3. **Answer Questions**: The AI coach will guide you through discovery
 4. **Review Outline**: Once generated, review and approve or request revisions
