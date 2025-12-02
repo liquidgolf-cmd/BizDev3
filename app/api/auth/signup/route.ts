@@ -24,9 +24,17 @@ export async function POST(request: NextRequest) {
     // Initialize Firebase Admin (lazy initialization)
     const adminApp = getAdminApp();
     if (!adminApp) {
-      console.error('Firebase Admin initialization failed. Check environment variables.');
+      const missingVars = [];
+      if (!process.env.FIREBASE_ADMIN_PROJECT_ID) missingVars.push('FIREBASE_ADMIN_PROJECT_ID');
+      if (!process.env.FIREBASE_ADMIN_PRIVATE_KEY) missingVars.push('FIREBASE_ADMIN_PRIVATE_KEY');
+      if (!process.env.FIREBASE_ADMIN_CLIENT_EMAIL) missingVars.push('FIREBASE_ADMIN_CLIENT_EMAIL');
+      
+      console.error('Firebase Admin initialization failed. Missing variables:', missingVars);
       return NextResponse.json(
-        { error: 'Server configuration error. Please contact support.' },
+        { 
+          error: 'Server configuration error. Please ensure all Firebase Admin environment variables are set in Vercel.',
+          details: missingVars.length > 0 ? `Missing: ${missingVars.join(', ')}` : 'Unknown error'
+        },
         { status: 500 }
       );
     }

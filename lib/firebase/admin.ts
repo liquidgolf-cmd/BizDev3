@@ -34,9 +34,24 @@ function initializeAdmin() {
   }
 
   try {
+    // Handle private key - it might be base64 encoded or have escaped newlines
+    let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY || '';
+    
+    // Replace escaped newlines
+    privateKey = privateKey.replace(/\\n/g, '\n');
+    
+    // If it doesn't start with -----BEGIN, it might be base64 encoded
+    if (!privateKey.includes('BEGIN PRIVATE KEY')) {
+      try {
+        privateKey = Buffer.from(privateKey, 'base64').toString('utf-8');
+      } catch (e) {
+        // Not base64, use as-is
+      }
+    }
+
     const serviceAccount = {
       projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-      privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      privateKey: privateKey,
       clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
     };
 
@@ -46,8 +61,15 @@ function initializeAdmin() {
 
     adminDb = getFirestore(adminApp);
     return adminApp;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to initialize Firebase Admin:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      hasProjectId: !!process.env.FIREBASE_ADMIN_PROJECT_ID,
+      hasPrivateKey: !!process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+      hasClientEmail: !!process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+    });
     return null;
   }
 }
