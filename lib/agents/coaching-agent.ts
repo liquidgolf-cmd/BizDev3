@@ -1,4 +1,4 @@
-import { getAnthropicClient } from '@/lib/anthropic/client';
+import { createMessageWithFallback } from '@/lib/anthropic/model-fallback';
 import { ProjectOutline, ProjectContext, CoachMessage, QuickReply } from '@/types/coaching';
 
 const COACH_SYSTEM_PROMPT = `You are an expert business strategist and web consultant helping someone plan their web project. Your role is to guide them through a discovery process to understand their needs and create a strategic outline.
@@ -87,15 +87,16 @@ export class CoachingAgent {
       content: msg.content,
     }));
 
-    // Call Claude with coaching prompt (using Claude Sonnet 4.5)
-    const anthropic = getAnthropicClient();
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022', // Claude Sonnet 4.5
-      max_tokens: 2048,
-      system: COACH_SYSTEM_PROMPT,
-      tools: this.getTools(),
-      messages: formattedMessages as any,
-    });
+    // Call Claude with coaching prompt (using model fallback)
+    const { response } = await createMessageWithFallback(
+      {
+        max_tokens: 2048,
+        system: COACH_SYSTEM_PROMPT,
+        tools: this.getTools(),
+        messages: formattedMessages as any,
+      },
+      'PRIMARY_COACH'
+    );
 
     // Process response
     const result: {
@@ -176,14 +177,16 @@ Please revise the outline based on their feedback and generate an updated versio
       content: msg.content,
     }));
 
-    const anthropic = getAnthropicClient();
-    const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022', // Claude Sonnet 4.5
-      max_tokens: 2048,
-      system: COACH_SYSTEM_PROMPT,
-      tools: this.getTools(),
-      messages: formattedMessages as any,
-    });
+    // Call Claude with model fallback for revision
+    const { response } = await createMessageWithFallback(
+      {
+        max_tokens: 2048,
+        system: COACH_SYSTEM_PROMPT,
+        tools: this.getTools(),
+        messages: formattedMessages as any,
+      },
+      'PRIMARY_COACH'
+    );
 
     // Extract updated outline
     for (const block of response.content) {

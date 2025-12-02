@@ -98,3 +98,4 @@ export default function ActivityFeed({ projects, limit = 5 }: ActivityFeedProps)
   );
 }
 
+

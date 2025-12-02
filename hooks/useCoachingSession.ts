@@ -34,3 +34,4 @@ export function useCoachingSession(sessionId: string | null) {
   return { session, isLoading, error };
 }
 
+
