@@ -1,5 +1,8 @@
 import NextAuth from 'next-auth';
 import Google from 'next-auth/providers/google';
+import Credentials from 'next-auth/providers/credentials';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth as firebaseAuth } from '@/lib/firebase/config';
 
 const authSecret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
 
@@ -16,6 +19,46 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID || '',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+    }),
+    Credentials({
+      name: 'Email',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        if (!firebaseAuth) {
+          throw new Error('Firebase Auth not initialized');
+        }
+
+        try {
+          // Try to sign in with email/password
+          const userCredential = await signInWithEmailAndPassword(
+            firebaseAuth,
+            credentials.email as string,
+            credentials.password as string
+          );
+
+          const user = userCredential.user;
+          
+          return {
+            id: user.uid,
+            email: user.email!,
+            name: user.displayName || user.email?.split('@')[0] || 'User',
+            image: user.photoURL || undefined,
+          };
+        } catch (error: any) {
+          // If user doesn't exist, return null (don't create account here)
+          if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+            return null;
+          }
+          throw error;
+        }
+      },
     }),
   ],
   callbacks: {
@@ -38,6 +81,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   pages: {
     signIn: '/auth/signin',
+    signUp: '/auth/signup',
   },
   trustHost: true, // Required for Vercel deployment
   debug: process.env.NODE_ENV === 'development',

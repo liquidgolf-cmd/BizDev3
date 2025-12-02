@@ -38,10 +38,22 @@ const convertTimestamp = (timestamp: any): Date => {
   return new Date();
 };
 
-// Projects collection
+// Collections
 export const projectsCollection = 'projects';
 export const sessionsCollection = 'coaching_sessions';
 export const usersCollection = 'users';
+
+// User operations
+export async function getUser(userId: string): Promise<User | null> {
+  const userRef = doc(getDb(), usersCollection, userId);
+  const userSnap = await getDoc(userRef);
+  return userSnap.exists() ? (userSnap.data() as User) : null;
+}
+
+export async function createUser(user: User): Promise<void> {
+  const userRef = doc(getDb(), usersCollection, user.id);
+  await setDoc(userRef, user);
+}
 
 // Project operations
 export async function createProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project> {
