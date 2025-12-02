@@ -2,6 +2,7 @@
 
 import { Project } from '@/types/project';
 import ProjectCard from './ProjectCard';
+import Link from 'next/link';
 
 interface ProjectGridProps {
   projects: Project[];
@@ -25,9 +26,17 @@ export default function ProjectGrid({ projects, isLoading }: ProjectGridProps) {
 
   if (projects.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 mb-4">No projects yet</p>
-        <p className="text-sm text-gray-400">Create your first project to get started</p>
+      <div className="text-center py-16">
+        <div className="max-w-md mx-auto">
+          <h3 className="text-2xl font-semibold text-gray-900 mb-2">No projects yet</h3>
+          <p className="text-gray-700 mb-6">Start by creating your first project with our AI coaching assistant</p>
+          <Link
+            href="/coaching/new"
+            className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            Start New Project
+          </Link>
+        </div>
       </div>
     );
   }

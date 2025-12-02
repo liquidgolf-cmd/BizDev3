@@ -37,12 +37,12 @@ export default function ProjectCard({ project }: ProjectCardProps) {
         )}
         
         {project.context?.projectType && (
-          <p className="text-xs text-gray-500 mb-4">
+          <p className="text-xs text-gray-700 mb-4">
             {project.context.projectType}
           </p>
         )}
 
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-gray-600">
           Updated {new Date(project.updatedAt).toLocaleDateString()}
         </div>
       </div>
