@@ -95,7 +95,7 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
 
   async function handleApprove(projectName: string) {
     if (!sessionId || !projectName.trim()) {
-      alert('Please enter a project name');
+      toast.showWarning('Please enter a project name');
       return;
     }
 
@@ -132,7 +132,7 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
 
   async function handleRevise(feedback: string) {
     if (!sessionId || !feedback.trim()) {
-      alert('Please provide feedback for revision');
+      toast.showWarning('Please provide feedback for revision');
       return;
     }
 
