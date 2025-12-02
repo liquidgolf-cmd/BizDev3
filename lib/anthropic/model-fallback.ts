@@ -7,16 +7,15 @@ import Anthropic from '@anthropic-ai/sdk';
 export const MODEL_PRIORITIES = {
   // Primary AI Coach - tries newest first, falls back to older models
   PRIMARY_COACH: [
-    'claude-3-5-sonnet-20241022', // Claude 3.5 Sonnet, Oct 2024 (primary - most reliable)
-    'claude-3-5-sonnet-20240620', // Claude 3.5 Sonnet, June 2024 (fallback)
+    'claude-3-5-sonnet-20240620', // Claude 3.5 Sonnet, June 2024 (most reliable)
+    'claude-3-5-sonnet-20241022', // Claude 3.5 Sonnet, Oct 2024 (if available)
     'claude-3-sonnet-20240229',   // Claude 3.0 Sonnet, fallback
-    // Future models (commented out until available):
-    // 'claude-sonnet-4-5-20250929', // Claude Sonnet 4.5 (when available)
+    'claude-3-opus-20240229',     // Claude 3 Opus as last resort
   ],
   // Weekly Coaching Session
-  WEEKLY_COACHING: ['claude-3-5-sonnet-20241022'],
+  WEEKLY_COACHING: ['claude-3-5-sonnet-20240620'],
   // Reports Generation
-  REPORTS: ['claude-3-5-sonnet-20241022'], // Using available model until claude-sonnet-4-20250514 is available
+  REPORTS: ['claude-3-5-sonnet-20240620'],
 } as const;
 
 export type ModelPriorityType = keyof typeof MODEL_PRIORITIES;
@@ -83,14 +82,25 @@ export async function createMessageWithFallback(
 ): Promise<{ response: Anthropic.Messages.Message; model: string }> {
   const anthropic = getAnthropicClient();
   
-  return callWithModelFallback(
+  const result = await callWithModelFallback(
     async (model) => {
-      return await anthropic.messages.create({
+      const response = await anthropic.messages.create({
         ...options,
         model,
       } as Anthropic.Messages.MessageCreateParams);
+      
+      // Ensure we return a Message, not a Stream
+      if ('content' in response) {
+        return response as Anthropic.Messages.Message;
+      }
+      throw new Error('Streaming response not supported');
     },
     modelPriority
   );
+  
+  return {
+    response: result.result,
+    model: result.model,
+  };
 }
 
