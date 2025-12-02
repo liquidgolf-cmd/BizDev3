@@ -46,20 +46,8 @@ export default function SignUpPage() {
         return;
       }
 
-      // After successful signup, sign in the user
-      const signInResponse = await fetch('/api/auth/callback/credentials', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (signInResponse.ok) {
-        router.push('/dashboard');
-        router.refresh();
-      } else {
-        // Account created but sign-in failed, redirect to sign-in page
-        router.push('/auth/signin?registered=true');
-      }
+      // After successful signup, redirect to sign-in page
+      router.push('/auth/signin?registered=true&email=' + encodeURIComponent(email));
     } catch (err) {
       setError('An error occurred. Please try again.');
       setIsLoading(false);
