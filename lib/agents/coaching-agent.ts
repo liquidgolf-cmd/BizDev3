@@ -88,15 +88,23 @@ export class CoachingAgent {
     }));
 
     // Call Claude with coaching prompt (using model fallback)
-    const { response } = await createMessageWithFallback(
-      {
-        max_tokens: 2048,
-        system: COACH_SYSTEM_PROMPT,
-        tools: this.getTools(),
-        messages: formattedMessages as any,
-      },
-      'PRIMARY_COACH'
-    );
+    let response;
+    try {
+      const result = await createMessageWithFallback(
+        {
+          max_tokens: 2048,
+          system: COACH_SYSTEM_PROMPT,
+          tools: this.getTools(),
+          messages: formattedMessages as any,
+        },
+        'PRIMARY_COACH'
+      );
+      response = result.response;
+      console.log(`[CoachingAgent] Successfully got response from model: ${result.model}`);
+    } catch (error: any) {
+      console.error('[CoachingAgent] Error calling Anthropic API:', error);
+      throw new Error(`Failed to get AI response: ${error?.message || 'Unknown error'}`);
+    }
 
     // Process response
     const result: {
@@ -178,15 +186,23 @@ Please revise the outline based on their feedback and generate an updated versio
     }));
 
     // Call Claude with model fallback for revision
-    const { response } = await createMessageWithFallback(
-      {
-        max_tokens: 2048,
-        system: COACH_SYSTEM_PROMPT,
-        tools: this.getTools(),
-        messages: formattedMessages as any,
-      },
-      'PRIMARY_COACH'
-    );
+    let response;
+    try {
+      const result = await createMessageWithFallback(
+        {
+          max_tokens: 2048,
+          system: COACH_SYSTEM_PROMPT,
+          tools: this.getTools(),
+          messages: formattedMessages as any,
+        },
+        'PRIMARY_COACH'
+      );
+      response = result.response;
+      console.log(`[CoachingAgent] Successfully revised outline with model: ${result.model}`);
+    } catch (error: any) {
+      console.error('[CoachingAgent] Error revising outline:', error);
+      throw new Error(`Failed to revise outline: ${error?.message || 'Unknown error'}`);
+    }
 
     // Extract updated outline
     for (const block of response.content) {

@@ -7,15 +7,16 @@ import Anthropic from '@anthropic-ai/sdk';
 export const MODEL_PRIORITIES = {
   // Primary AI Coach - tries newest first, falls back to older models
   PRIMARY_COACH: [
-    'claude-sonnet-4-5-20250929', // Claude Sonnet 4.5 (if available)
-    'claude-3-5-sonnet-20241022', // Claude 3.5 Sonnet, Oct 2024 (primary fallback)
-    'claude-3-5-sonnet-20240620', // Claude 3.5 Sonnet, June 2024
+    'claude-3-5-sonnet-20241022', // Claude 3.5 Sonnet, Oct 2024 (primary - most reliable)
+    'claude-3-5-sonnet-20240620', // Claude 3.5 Sonnet, June 2024 (fallback)
     'claude-3-sonnet-20240229',   // Claude 3.0 Sonnet, fallback
+    // Future models (commented out until available):
+    // 'claude-sonnet-4-5-20250929', // Claude Sonnet 4.5 (when available)
   ],
   // Weekly Coaching Session
   WEEKLY_COACHING: ['claude-3-5-sonnet-20241022'],
   // Reports Generation
-  REPORTS: ['claude-sonnet-4-20250514'], // Note: This may not be available yet
+  REPORTS: ['claude-3-5-sonnet-20241022'], // Using available model until claude-sonnet-4-20250514 is available
 } as const;
 
 export type ModelPriorityType = keyof typeof MODEL_PRIORITIES;
@@ -32,20 +33,37 @@ export async function callWithModelFallback<T>(
 
   for (const model of models) {
     try {
-      console.log(`Attempting to use model: ${model}`);
+      console.log(`[Model Fallback] Attempting to use model: ${model}`);
       const result = await callFn(model);
-      console.log(`Successfully used model: ${model}`);
+      console.log(`[Model Fallback] Successfully used model: ${model}`);
       return { result, model };
     } catch (error: any) {
-      // Log the error but continue to next model
-      console.warn(`Model ${model} failed:`, error?.message || error);
+      // Log detailed error information
+      const errorStatus = error?.status || error?.statusCode;
+      const errorMessage = error?.message || String(error);
+      console.warn(`[Model Fallback] Model ${model} failed:`, {
+        status: errorStatus,
+        message: errorMessage,
+        error: error,
+      });
       errors.push({ model, error: error as Error });
       
-      // If it's not an API/model-related error (400, 404, 429), don't try other models
-      // These status codes typically indicate model availability issues
-      if (error?.status && ![400, 404, 429].includes(error.status)) {
-        throw error;
+      // Only try next model if it's a model-specific error
+      // Status codes that indicate model issues: 400 (bad request), 404 (not found), 429 (rate limit)
+      // Don't retry on: 401 (auth), 403 (forbidden), 500+ (server errors that won't be fixed by model change)
+      if (errorStatus) {
+        // If it's an authentication or permission error, don't try other models
+        if ([401, 403].includes(errorStatus)) {
+          throw error;
+        }
+        // If it's a server error (500+), only retry if it's a 503 (service unavailable)
+        if (errorStatus >= 500 && errorStatus !== 503) {
+          throw error;
+        }
       }
+      
+      // If error doesn't have a status, it might be a network error or other issue
+      // Continue to next model in case it's model-specific
     }
   }
 
