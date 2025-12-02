@@ -1,24 +1,12 @@
-import { adminDb } from './admin';
-import { 
-  collection, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  setDoc, 
-  updateDoc, 
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy,
-  Timestamp 
-} from 'firebase/firestore';
-import { db } from './config';
+import { getAdminDb } from './admin';
+import { Timestamp } from 'firebase-admin/firestore';
 
 function getDb() {
-  if (!db) {
-    throw new Error('Firebase not initialized. Please set Firebase environment variables.');
+  const adminDb = getAdminDb();
+  if (!adminDb) {
+    throw new Error('Firebase Admin not initialized. Please check FIREBASE_ADMIN environment variables in Vercel.');
   }
-  return db;
+  return adminDb;
 }
 import { Project } from '@/types/project';
 import { CoachingSession, CoachMessage } from '@/types/coaching';
@@ -45,19 +33,35 @@ export const usersCollection = 'users';
 
 // User operations
 export async function getUser(userId: string): Promise<User | null> {
-  const userRef = doc(getDb(), usersCollection, userId);
-  const userSnap = await getDoc(userRef);
-  return userSnap.exists() ? (userSnap.data() as User) : null;
+  const db = getDb();
+  const userRef = db.collection(usersCollection).doc(userId);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    return null;
+  }
+  const data = userSnap.data();
+  return {
+    ...data,
+    id: userSnap.id,
+    createdAt: convertTimestamp(data?.createdAt),
+    updatedAt: convertTimestamp(data?.updatedAt),
+  } as User;
 }
 
 export async function createUser(user: User): Promise<void> {
-  const userRef = doc(getDb(), usersCollection, user.id);
-  await setDoc(userRef, user);
+  const db = getDb();
+  const userRef = db.collection(usersCollection).doc(user.id);
+  await userRef.set({
+    ...user,
+    createdAt: Timestamp.fromDate(user.createdAt),
+    updatedAt: Timestamp.fromDate(user.updatedAt),
+  });
 }
 
 // Project operations
 export async function createProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project> {
-  const projectRef = doc(collection(getDb(), projectsCollection));
+  const db = getDb();
+  const projectRef = db.collection(projectsCollection).doc();
   const now = new Date();
   const newProject: Project = {
     ...project,
@@ -66,7 +70,7 @@ export async function createProject(project: Omit<Project, 'id' | 'createdAt' | 
     updatedAt: now,
   };
   
-  await setDoc(projectRef, {
+  await projectRef.set({
     ...newProject,
     createdAt: Timestamp.fromDate(newProject.createdAt),
     updatedAt: Timestamp.fromDate(newProject.updatedAt),
@@ -76,10 +80,11 @@ export async function createProject(project: Omit<Project, 'id' | 'createdAt' | 
 }
 
 export async function getProject(projectId: string): Promise<Project | null> {
-  const projectRef = doc(getDb(), projectsCollection, projectId);
-  const projectSnap = await getDoc(projectRef);
+  const db = getDb();
+  const projectRef = db.collection(projectsCollection).doc(projectId);
+  const projectSnap = await projectRef.get();
   
-  if (!projectSnap.exists()) {
+  if (!projectSnap.exists) {
     return null;
   }
   
@@ -87,46 +92,50 @@ export async function getProject(projectId: string): Promise<Project | null> {
   return {
     ...data,
     id: projectSnap.id,
-    createdAt: convertTimestamp(data.createdAt),
-    updatedAt: convertTimestamp(data.updatedAt),
+    createdAt: convertTimestamp(data?.createdAt),
+    updatedAt: convertTimestamp(data?.updatedAt),
   } as Project;
 }
 
 export async function getUserProjects(userId: string): Promise<Project[]> {
-  const q = query(
-    collection(getDb(), projectsCollection),
-    where('userId', '==', userId),
-    orderBy('updatedAt', 'desc')
-  );
+  const db = getDb();
+  const querySnapshot = await db.collection(projectsCollection)
+    .where('userId', '==', userId)
+    .orderBy('updatedAt', 'desc')
+    .get();
   
-  const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(docSnapshot => {
     const data = docSnapshot.data();
     return {
       ...data,
       id: docSnapshot.id,
-      createdAt: convertTimestamp(data.createdAt),
-      updatedAt: convertTimestamp(data.updatedAt),
+      createdAt: convertTimestamp(data?.createdAt),
+      updatedAt: convertTimestamp(data?.updatedAt),
     } as Project;
   });
 }
 
 export async function updateProject(projectId: string, updates: Partial<Project>): Promise<void> {
-  const projectRef = doc(getDb(), projectsCollection, projectId);
-  await updateDoc(projectRef, {
+  const db = getDb();
+  const projectRef = db.collection(projectsCollection).doc(projectId);
+  await projectRef.update({
     ...updates,
     updatedAt: Timestamp.fromDate(new Date()),
   });
 }
 
 export async function deleteProject(projectId: string): Promise<void> {
-  const projectRef = doc(getDb(), projectsCollection, projectId);
-  await deleteDoc(projectRef);
+  const db = getDb();
+  const projectRef = db.collection(projectsCollection).doc(projectId);
+  await projectRef.delete();
 }
 
 // Coaching session operations
 export async function createSession(session: Omit<CoachingSession, 'id' | 'createdAt' | 'updatedAt'>, customId?: string): Promise<CoachingSession> {
-  const sessionRef = customId ? doc(getDb(), sessionsCollection, customId) : doc(collection(getDb(), sessionsCollection));
+  const db = getDb();
+  const sessionRef = customId 
+    ? db.collection(sessionsCollection).doc(customId)
+    : db.collection(sessionsCollection).doc();
   const now = new Date();
   const newSession: CoachingSession = {
     ...session,
@@ -135,7 +144,7 @@ export async function createSession(session: Omit<CoachingSession, 'id' | 'creat
     updatedAt: now,
   };
   
-  await setDoc(sessionRef, {
+  await sessionRef.set({
     ...newSession,
     messages: newSession.messages.map(msg => ({
       ...msg,
@@ -149,10 +158,11 @@ export async function createSession(session: Omit<CoachingSession, 'id' | 'creat
 }
 
 export async function getSession(sessionId: string): Promise<CoachingSession | null> {
-  const sessionRef = doc(getDb(), sessionsCollection, sessionId);
-  const sessionSnap = await getDoc(sessionRef);
+  const db = getDb();
+  const sessionRef = db.collection(sessionsCollection).doc(sessionId);
+  const sessionSnap = await sessionRef.get();
   
-  if (!sessionSnap.exists()) {
+  if (!sessionSnap.exists) {
     return null;
   }
   
@@ -160,17 +170,20 @@ export async function getSession(sessionId: string): Promise<CoachingSession | n
   return {
     ...data,
     id: sessionSnap.id,
-    messages: data.messages.map((msg: any) => ({
+    messages: (data?.messages || []).map((msg: any) => ({
       ...msg,
       timestamp: convertTimestamp(msg.timestamp),
     })),
-    createdAt: convertTimestamp(data.createdAt),
-    updatedAt: convertTimestamp(data.updatedAt),
+    outline: data?.outline || null,
+    extractedContext: data?.extractedContext || null,
+    createdAt: convertTimestamp(data?.createdAt),
+    updatedAt: convertTimestamp(data?.updatedAt),
   } as CoachingSession;
 }
 
 export async function updateSession(sessionId: string, updates: Partial<CoachingSession>): Promise<void> {
-  const sessionRef = doc(getDb(), sessionsCollection, sessionId);
+  const db = getDb();
+  const sessionRef = db.collection(sessionsCollection).doc(sessionId);
   const updateData: any = {
     ...updates,
     updatedAt: Timestamp.fromDate(new Date()),
@@ -183,6 +196,6 @@ export async function updateSession(sessionId: string, updates: Partial<Coaching
     }));
   }
   
-  await updateDoc(sessionRef, updateData);
+  await sessionRef.update(updateData);
 }
 
