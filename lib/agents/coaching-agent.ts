@@ -1,4 +1,4 @@
-import { anthropic } from '@/lib/anthropic/client';
+import { getAnthropicClient } from '@/lib/anthropic/client';
 import { ProjectOutline, ProjectContext, CoachMessage, QuickReply } from '@/types/coaching';
 
 const COACH_SYSTEM_PROMPT = `You are an expert business strategist and web consultant helping someone plan their web project. Your role is to guide them through a discovery process to understand their needs and create a strategic outline.
@@ -88,6 +88,7 @@ export class CoachingAgent {
     }));
 
     // Call Claude with coaching prompt (using Claude Sonnet 4.5)
+    const anthropic = getAnthropicClient();
     const response = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022', // Claude Sonnet 4.5
       max_tokens: 2048,
