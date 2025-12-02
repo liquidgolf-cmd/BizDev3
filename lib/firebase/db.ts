@@ -12,16 +12,26 @@ import { Project } from '@/types/project';
 import { CoachingSession, CoachMessage } from '@/types/coaching';
 import { User } from '@/types/user';
 
-// Helper to convert Firestore timestamps
+// Helper to convert Firestore timestamps (works with both Admin SDK and client SDK)
 const convertTimestamp = (timestamp: any): Date => {
-  if (timestamp?.toDate) {
+  if (!timestamp) {
+    return new Date();
+  }
+  // Admin SDK Timestamp
+  if (timestamp.toDate && typeof timestamp.toDate === 'function') {
     return timestamp.toDate();
   }
+  // Already a Date
   if (timestamp instanceof Date) {
     return timestamp;
   }
+  // String date
   if (typeof timestamp === 'string') {
     return new Date(timestamp);
+  }
+  // Firestore Timestamp object (seconds and nanoseconds)
+  if (timestamp.seconds !== undefined) {
+    return new Date(timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000);
   }
   return new Date();
 };
