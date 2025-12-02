@@ -4,14 +4,36 @@ import { getFirestore, Firestore } from 'firebase-admin/firestore';
 let adminApp: App | null = null;
 let adminDb: Firestore | null = null;
 
-// Only initialize if credentials are available (not during build)
-if (
-  process.env.FIREBASE_ADMIN_PROJECT_ID &&
-  process.env.FIREBASE_ADMIN_PRIVATE_KEY &&
-  process.env.FIREBASE_ADMIN_CLIENT_EMAIL &&
-  typeof window === 'undefined' // Server-side only
-) {
-  if (getApps().length === 0) {
+function initializeAdmin() {
+  // Return existing app if already initialized
+  if (adminApp) {
+    return adminApp;
+  }
+
+  // Check if already initialized by Firebase Admin
+  const existingApps = getApps();
+  if (existingApps.length > 0) {
+    adminApp = existingApps[0];
+    adminDb = getFirestore(adminApp);
+    return adminApp;
+  }
+
+  // Check for required environment variables
+  if (
+    !process.env.FIREBASE_ADMIN_PROJECT_ID ||
+    !process.env.FIREBASE_ADMIN_PRIVATE_KEY ||
+    !process.env.FIREBASE_ADMIN_CLIENT_EMAIL
+  ) {
+    console.error('Firebase Admin environment variables are missing');
+    return null;
+  }
+
+  // Only initialize on server-side
+  if (typeof window !== 'undefined') {
+    return null;
+  }
+
+  try {
     const serviceAccount = {
       projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
       privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY.replace(/\\n/g, '\n'),
@@ -21,12 +43,27 @@ if (
     adminApp = initializeApp({
       credential: cert(serviceAccount as any),
     });
-  } else {
-    adminApp = getApps()[0];
-  }
 
-  adminDb = getFirestore(adminApp);
+    adminDb = getFirestore(adminApp);
+    return adminApp;
+  } catch (error) {
+    console.error('Failed to initialize Firebase Admin:', error);
+    return null;
+  }
 }
 
+// Lazy initialization - initialize when accessed
+export function getAdminApp(): App | null {
+  return initializeAdmin();
+}
+
+export function getAdminDb(): Firestore | null {
+  if (!adminDb) {
+    initializeAdmin();
+  }
+  return adminDb;
+}
+
+// For backward compatibility
 export { adminDb, adminApp };
 

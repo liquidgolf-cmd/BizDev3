@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuth } from 'firebase-admin/auth';
-import { adminApp } from '@/lib/firebase/admin';
+import { getAdminApp } from '@/lib/firebase/admin';
 import { createUser as createUserInDb } from '@/lib/firebase/db';
 
 export async function POST(request: NextRequest) {
@@ -21,9 +21,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Initialize Firebase Admin (lazy initialization)
+    const adminApp = getAdminApp();
     if (!adminApp) {
+      console.error('Firebase Admin initialization failed. Check environment variables.');
       return NextResponse.json(
-        { error: 'Firebase Admin not initialized' },
+        { error: 'Server configuration error. Please contact support.' },
         { status: 500 }
       );
     }
