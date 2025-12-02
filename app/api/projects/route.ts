@@ -32,10 +32,18 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(filteredProjects);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching projects:', error);
+    console.error('Error details:', {
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code,
+    });
     return NextResponse.json(
-      { error: 'Failed to fetch projects' },
+      { 
+        error: 'Failed to fetch projects',
+        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+      },
       { status: 500 }
     );
   }
