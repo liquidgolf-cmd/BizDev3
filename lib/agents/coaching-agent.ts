@@ -171,6 +171,7 @@ Please revise the outline based on their feedback and generate an updated versio
       content: msg.content,
     }));
 
+    const anthropic = getAnthropicClient();
     const response = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022', // Claude Sonnet 4.5
       max_tokens: 2048,
