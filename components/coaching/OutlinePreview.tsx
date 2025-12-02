@@ -7,9 +7,10 @@ interface OutlinePreviewProps {
   outline: ProjectOutline;
   onApprove: (projectName: string) => void;
   onRevise: (feedback: string) => void;
+  isLoading?: boolean;
 }
 
-export default function OutlinePreview({ outline, onApprove, onRevise }: OutlinePreviewProps) {
+export default function OutlinePreview({ outline, onApprove, onRevise, isLoading = false }: OutlinePreviewProps) {
   const [projectName, setProjectName] = useState('');
   const [feedback, setFeedback] = useState('');
   const [showRevise, setShowRevise] = useState(false);
@@ -63,27 +64,52 @@ export default function OutlinePreview({ outline, onApprove, onRevise }: Outline
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Project Name
+              Project Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={projectName}
-              onChange={e => setProjectName(e.target.value)}
-              placeholder="Enter project name"
+              onChange={e => {
+                const value = e.target.value;
+                // Limit to 100 characters
+                if (value.length <= 100) {
+                  setProjectName(value);
+                }
+              }}
+              placeholder="Enter project name (required)"
+              maxLength={100}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              required
             />
+            <p className="text-xs text-gray-500 mt-1">
+              {projectName.length}/100 characters
+            </p>
           </div>
           <div className="flex gap-4">
             <button
-              onClick={() => onApprove(projectName || 'New Project')}
-              disabled={!projectName.trim()}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => {
+                if (!projectName.trim()) {
+                  alert('Please enter a project name');
+                  return;
+              }
+                onApprove(projectName.trim());
+              }}
+              disabled={!projectName.trim() || isLoading}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              Approve & Create Project
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </>
+              ) : (
+                'Approve & Create Project'
+              )}
             </button>
             <button
               onClick={() => setShowRevise(true)}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+              disabled={isLoading}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Request Revision
             </button>
@@ -110,10 +136,17 @@ export default function OutlinePreview({ outline, onApprove, onRevise }: Outline
                 setFeedback('');
                 setShowRevise(false);
               }}
-              disabled={!feedback.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              disabled={!feedback.trim() || isLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
             >
-              Submit Revision Request
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Revising...
+                </>
+              ) : (
+                'Submit Revision Request'
+              )}
             </button>
             <button
               onClick={() => {

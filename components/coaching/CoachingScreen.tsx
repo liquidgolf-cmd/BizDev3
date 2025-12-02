@@ -64,13 +64,14 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to send message');
       }
 
       const data = await response.json();
       const coachMessage: CoachMessage = {
         role: 'coach',
-        content: data.content,
+        content: data.content || 'No response received',
         quickReplies: data.quickReplies,
         timestamp: new Date(),
       };
@@ -80,67 +81,93 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
       if (data.outline) {
         setOutline(data.outline);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error);
-      alert('Failed to send message. Please try again.');
+      // Remove the user message that failed
+      setMessages(prev => prev.slice(0, -1));
+      // Show error message
+      const errorMessage: CoachMessage = {
+        role: 'coach',
+        content: `Sorry, I encountered an error: ${error.message || 'Please try again.'}`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   }
 
   async function handleApprove(projectName: string) {
-    if (!sessionId) return;
+    if (!sessionId || !projectName.trim()) {
+      alert('Please enter a project name');
+      return;
+    }
 
+    setIsLoading(true);
     try {
       const response = await fetch(`/api/coaching/${sessionId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectName }),
+        body: JSON.stringify({ projectName: projectName.trim() }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to approve outline');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to approve outline');
       }
 
       const data = await response.json();
+      if (!data.projectId) {
+        throw new Error('Invalid response from server');
+      }
+
       if (onComplete) {
         onComplete(data.projectId);
       } else {
         router.push(`/projects/${data.projectId}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error approving outline:', error);
-      alert('Failed to approve outline. Please try again.');
+      alert(`Failed to approve outline: ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsLoading(false);
     }
   }
 
   async function handleRevise(feedback: string) {
-    if (!sessionId) return;
+    if (!sessionId || !feedback.trim()) {
+      alert('Please provide feedback for revision');
+      return;
+    }
 
     setIsLoading(true);
     try {
       const response = await fetch(`/api/coaching/${sessionId}/revise`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ feedback }),
+        body: JSON.stringify({ feedback: feedback.trim() }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to revise outline');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to revise outline');
       }
 
       const data = await response.json();
-      setOutline(data.outline);
+      
+      if (data.outline) {
+        setOutline(data.outline);
+      }
 
       const coachMessage: CoachMessage = {
         role: 'coach',
-        content: data.content,
+        content: data.content || 'I\'ve revised the outline based on your feedback.',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, coachMessage]);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error revising outline:', error);
-      alert('Failed to revise outline. Please try again.');
+      alert(`Failed to revise outline: ${error.message || 'Please try again.'}`);
     } finally {
       setIsLoading(false);
     }
@@ -192,6 +219,7 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
               outline={outline}
               onApprove={handleApprove}
               onRevise={handleRevise}
+              isLoading={isLoading}
             />
           )}
           <div ref={messagesEndRef} />
