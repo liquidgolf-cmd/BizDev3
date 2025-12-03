@@ -190,11 +190,21 @@ const styles: { type: CoachingStyle; name: string; description: string; icon: st
 export default function CoachSelection({ onSelect, isLoading = false }: CoachSelectionProps) {
   const [selectedCoach, setSelectedCoach] = useState<CoachType | null>(null);
   const [selectedStyle, setSelectedStyle] = useState<CoachingStyle>('mentor');
+  const [expandedCoach, setExpandedCoach] = useState<CoachType | null>(null); // Accordion state
 
   const handleStart = () => {
     if (selectedCoach) {
       onSelect(selectedCoach, selectedStyle);
     }
+  };
+
+  const handleSelectCoach = (coachType: CoachType) => {
+    setSelectedCoach(coachType);
+  };
+
+  const handleToggleExpand = (coachType: CoachType) => {
+    // If clicking the same coach that's expanded, close it. Otherwise, open the new one.
+    setExpandedCoach(expandedCoach === coachType ? null : coachType);
   };
 
   return (
@@ -217,43 +227,81 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
             {coaches.map((coach) => {
               const colors = coachColors[coach.type];
               const isSelected = selectedCoach === coach.type;
+              const isExpanded = expandedCoach === coach.type;
+              
               return (
-                <button
+                <div
                   key={coach.type}
-                  onClick={() => setSelectedCoach(coach.type)}
-                  className={`text-left transition-all border-2 rounded-lg p-6 shadow-md hover:shadow-lg ${
+                  className={`text-left transition-all border-2 rounded-lg shadow-md hover:shadow-lg ${
                     isSelected
                       ? `${colors.selected} ring-2 ring-offset-2 ring-blue-500`
                       : `${colors.bg} ${colors.border} hover:shadow-xl`
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <span className="text-4xl">{coach.icon}</span>
-                    {isSelected && (
-                      <div className={`w-6 h-6 ${colors.checkmark} rounded-full flex items-center justify-center`}>
-                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{coach.name}</h3>
-                  <p className={`text-sm ${colors.tagline} font-medium mb-3`}>{coach.tagline}</p>
-                  <p className="text-sm text-gray-700 mb-4">{coach.description}</p>
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-xs font-semibold text-gray-800 mb-1">Helps with:</p>
-                      <ul className="text-xs text-gray-700 space-y-1">
-                        {coach.helpsWith.map((item, idx) => (
-                          <li key={idx} className="flex items-start">
-                            <span className={`${colors.bullet} mr-1`}>•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
+                  {/* Card Content - Not clickable */}
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <span className="text-4xl">{coach.icon}</span>
+                      {isSelected && (
+                        <div className={`w-6 h-6 ${colors.checkmark} rounded-full flex items-center justify-center`}>
+                          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
                     </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{coach.name}</h3>
+                    <p className={`text-sm ${colors.tagline} font-medium mb-4`}>{coach.tagline}</p>
+
+                    {/* Select Button */}
+                    <button
+                      onClick={() => handleSelectCoach(coach.type)}
+                      className={`w-full py-2 px-4 rounded-lg font-medium transition-colors mb-3 ${
+                        isSelected
+                          ? `${colors.checkmark} text-white hover:opacity-90`
+                          : `bg-white border-2 ${colors.border} ${colors.tagline} hover:${colors.bg}`
+                      }`}
+                    >
+                      {isSelected ? 'Selected' : 'Select Coach'}
+                    </button>
+
+                    {/* Expand/Collapse Button */}
+                    <button
+                      onClick={() => handleToggleExpand(coach.type)}
+                      className={`w-full flex items-center justify-between text-sm ${colors.tagline} font-medium hover:opacity-80 transition-opacity py-2`}
+                    >
+                      <span>{isExpanded ? 'Hide details' : 'Show details'}</span>
+                      <svg
+                        className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
                   </div>
-                </button>
+
+                  {/* Accordion Content */}
+                  {isExpanded && (
+                    <div className="px-6 pb-6 border-t border-gray-200 pt-4 animate-in slide-in-from-top-2 duration-200">
+                      <p className="text-sm text-gray-700 mb-4">{coach.description}</p>
+                      <div className="space-y-2">
+                        <div>
+                          <p className="text-xs font-semibold text-gray-800 mb-1">Helps with:</p>
+                          <ul className="text-xs text-gray-700 space-y-1">
+                            {coach.helpsWith.map((item, idx) => (
+                              <li key={idx} className="flex items-start">
+                                <span className={`${colors.bullet} mr-1`}>•</span>
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
