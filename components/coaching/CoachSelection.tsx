@@ -212,8 +212,8 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
                   key={coach.type}
                   className={`text-left transition-all border-2 rounded-lg shadow-md hover:shadow-lg ${
                     isSelected
-                      ? `${colors.selected} ring-2 ring-offset-2 ring-blue-500`
-                      : `${colors.bg} ${colors.border} hover:shadow-xl`
+                      ? 'ring-2 ring-green-600 border-green-500 bg-green-50'
+                      : 'bg-white border-gray-200 hover:border-green-300'
                   }`}
                 >
                   {/* Card Content - Not clickable */}
@@ -221,11 +221,11 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
                     <div className="flex items-center gap-3 mb-4">
                       <span className="text-2xl">{coach.icon}</span>
                       <div className="flex-1">
-                        <h3 className="text-xl font-semibold text-gray-900">{coach.name}</h3>
-                        <p className={`text-sm ${colors.tagline} font-medium`}>{coach.tagline}</p>
+                    <h3 className="text-xl font-semibold text-gray-900">{coach.name}</h3>
+                    <p className="text-sm text-gray-600 font-medium">{coach.tagline}</p>
                       </div>
                       {isSelected && (
-                        <div className={`w-6 h-6 ${colors.checkmark} rounded-full flex items-center justify-center flex-shrink-0`}>
+                        <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
                           <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
@@ -238,8 +238,8 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
                       onClick={() => handleSelectCoach(coach.type)}
                       className={`w-full py-2 px-4 rounded-lg font-medium transition-colors mb-3 ${
                         isSelected
-                          ? `${colors.checkmark} text-white hover:opacity-90`
-                          : `bg-white border-2 ${colors.border} ${colors.tagline} hover:${colors.bg}`
+                          ? 'bg-green-600 text-white hover:opacity-90'
+                          : 'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                     >
                       {isSelected ? 'Selected' : 'Select Coach'}
@@ -248,7 +248,7 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
                     {/* Expand/Collapse Button */}
                     <button
                       onClick={() => handleToggleExpand(coach.type)}
-                      className={`w-full flex items-center justify-between text-sm ${colors.tagline} font-medium hover:opacity-80 transition-opacity py-2`}
+                      className="w-full flex items-center justify-between text-sm text-gray-600 font-medium hover:opacity-80 transition-opacity py-2"
                     >
                       <span>{isExpanded ? 'Hide details' : 'Show details'}</span>
                       <svg
@@ -272,7 +272,7 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
                           <ul className="text-xs text-gray-700 space-y-1">
                             {coach.helpsWith.map((item, idx) => (
                               <li key={idx} className="flex items-start">
-                                <span className={`${colors.bullet} mr-1`}>•</span>
+                                <span className="text-gray-500 mr-1">•</span>
                                 <span>{item}</span>
                               </li>
                             ))}
