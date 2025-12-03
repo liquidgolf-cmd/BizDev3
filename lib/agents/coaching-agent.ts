@@ -1,69 +1,95 @@
 import { createMessageWithFallback } from '@/lib/anthropic/model-fallback';
-import { ProjectOutline, ProjectContext, CoachMessage, QuickReply } from '@/types/coaching';
-
-const COACH_SYSTEM_PROMPT = `You are an expert business strategist and web consultant helping someone plan their web project. Your role is to guide them through a discovery process to understand their needs and create a strategic outline.
-
-YOUR PERSONALITY:
-- Friendly but professional
-- Concise – don't overwhelm with too many questions at once (max 2-3)
-- Insightful – pick up on what they're NOT saying
-- Practical – focus on what will actually work, not just what sounds good
-
-DISCOVERY PROCESS:
-1. Understand the project type (landing page, portfolio, etc.)
-2. Identify their business/product and target audience
-3. Uncover their unique value proposition
-4. Clarify the primary goal (what should visitors DO?)
-5. Understand their brand/style preferences
-6. Note any constraints or specific requirements
-
-CONVERSATION GUIDELINES:
-- Ask open-ended questions but offer examples to make it easy
-- If they're vague, probe deeper with follow-ups
-- Reflect back what you're hearing to confirm understanding
-- Keep the conversation moving – don't drag it out unnecessarily
-- When you have enough info (usually 4-6 exchanges), generate the outline
-
-GENERATING THE OUTLINE:
-When you have enough information, use the generate_outline tool to create a strategic project outline. This should include:
-- All recommended sections with clear purposes
-- Copy/messaging guidance based on their audience and value prop
-- Style recommendations that match their brand
-- Prioritization (must-have vs nice-to-have)
-
-The outline should be specific to THEIR business, not generic.
-
-OFFERING QUICK REPLIES:
-When appropriate, use the offer_quick_replies tool to give the user easy response options. Use this for:
-- Project type selection
-- Yes/no questions
-- Common choices (style preferences, goals, etc.)
-
-Don't overuse it – sometimes open text is better.`;
+import { ProjectOutline, ProjectContext, CoachMessage, QuickReply, CoachType, CoachingStyle, CoachingStage, BusinessPlan } from '@/types/coaching';
+import { COACH_PROMPTS } from './coach-prompts';
+import { STYLE_MODIFIERS } from './style-modifiers';
+import { BusinessProfile } from '@/types/business';
 
 export class CoachingAgent {
   private sessionId: string;
+  private coachType: CoachType;
+  private coachingStyle: CoachingStyle;
+  private stage: CoachingStage;
+  
   public messages: CoachMessage[] = [];
   public outline: ProjectOutline | null = null;
   public context: ProjectContext | null = null;
+  public businessProfile: BusinessProfile | null = null;
+  public plan: BusinessPlan | null = null;
 
-  constructor(sessionId: string) {
+  constructor(sessionId: string, coachType: CoachType = 'strategy', coachingStyle: CoachingStyle = 'mentor') {
     this.sessionId = sessionId;
+    this.coachType = coachType;
+    this.coachingStyle = coachingStyle;
+    this.stage = 'discovery';
+  }
+
+  /**
+   * Get the combined system prompt based on coach type, style, and current stage
+   */
+  private getSystemPrompt(): string {
+    const basePrompt = COACH_PROMPTS[this.coachType];
+    const styleModifier = STYLE_MODIFIERS[this.coachingStyle];
+    
+    let stageInstructions = '';
+    if (this.stage === 'discovery') {
+      stageInstructions = `
+CURRENT STAGE: Discovery
+- You are in the discovery phase
+- Ask probing questions to gather information
+- Use mark_discovery_complete tool when you've gathered enough info about a specific area
+- When you have comprehensive information, use transition_to_stage('plan_generation') to move forward`;
+    } else if (this.stage === 'plan_generation') {
+      stageInstructions = `
+CURRENT STAGE: Plan Generation
+- You have completed discovery
+- Generate a strategic business plan using the generate_business_plan tool
+- The plan should include: objectives (2-4, measurable), strategy overview, 3 phases with actions, metrics, and risks
+- Make it specific to their business, not generic
+- After generating the plan, use transition_to_stage('support') to enter support mode`;
+    } else if (this.stage === 'support') {
+      stageInstructions = `
+CURRENT STAGE: Support Mode
+- A strategic plan has been generated and approved
+- Help the user implement the plan
+- Reference specific actions from the plan when relevant
+- Help them overcome obstacles
+- Adjust the plan if needed based on new information
+- Be practical and actionable`;
+    }
+    
+    return `${basePrompt}
+
+${styleModifier}
+
+${stageInstructions}`;
   }
 
   async startSession(): Promise<{ content: string; quickReplies?: QuickReply[] }> {
-    const opening: QuickReply[] = [
-      { label: 'Landing page', value: 'I want to build a landing page' },
-      { label: 'Portfolio', value: 'I need a portfolio website' },
-      { label: 'Product/SaaS', value: 'A website for my software product' },
-      { label: 'E-commerce', value: 'An online store' },
-      { label: 'Blog', value: 'A blog or content site' },
-      { label: 'Something else', value: 'Something else' },
-    ];
+    const coachNames: Record<CoachType, string> = {
+      strategy: 'Strategy & Clarity',
+      brand: 'Brand & Positioning',
+      marketing: 'Marketing & Sales',
+      leadership: 'Leadership & Vision',
+      customer_experience: 'Customer Experience',
+    };
+
+    const styleNames: Record<CoachingStyle, string> = {
+      mentor: 'Mentor',
+      realist: 'Realist',
+      strategist: 'Strategist',
+    };
+
+    const openingMessages: Record<CoachType, string> = {
+      strategy: "Thanks for choosing the Strategy & Clarity Coach. I'll start with a quick audit so I can build a tailored plan for you. I'll ask a series of questions about your business, goals, and current situation. Answer in as much detail as you can, even if things feel messy. Ready? Let's start with a quick snapshot of your business.",
+      brand: "Thanks for choosing the Brand & Positioning Coach. I'll help you stand out in your market and create a compelling brand identity. Let's start by understanding your current brand and where you want to take it. Ready?",
+      marketing: "Thanks for choosing the Marketing & Sales Coach. I'll help you grow your customer base and optimize your sales process. Let's start by understanding your current marketing and sales situation. Ready?",
+      leadership: "Thanks for choosing the Leadership & Vision Coach. I'll help you clarify your vision, build effective teams, and make confident decisions. Let's start by understanding your current leadership situation and goals. Ready?",
+      customer_experience: "Thanks for choosing the Customer Experience Coach. I'll help you design exceptional customer journeys and build systems for retention and referrals. Let's start by understanding your current customer experience. Ready?",
+    };
 
     return {
-      content: "Hi! I'm here to help you create something that actually works for your business. Before we build anything, let's make sure we're building the RIGHT thing.\n\nWhat kind of project are you thinking about?",
-      quickReplies: opening,
+      content: openingMessages[this.coachType],
+      quickReplies: undefined, // No quick replies for business coaching - let AI ask probing questions
     };
   }
 
@@ -73,6 +99,7 @@ export class CoachingAgent {
     quickReplies?: QuickReply[];
     outline?: ProjectOutline;
     context?: ProjectContext;
+    plan?: BusinessPlan;
   }> {
     // Add user message to history
     this.messages.push({
@@ -95,7 +122,7 @@ export class CoachingAgent {
       const result = await createMessageWithFallback(
         {
           max_tokens: 2048,
-          system: COACH_SYSTEM_PROMPT,
+          system: this.getSystemPrompt(),
           tools: this.getTools(),
           messages: formattedMessages as any,
         },
@@ -125,12 +152,14 @@ export class CoachingAgent {
       quickReplies?: QuickReply[];
       outline?: ProjectOutline;
       context?: ProjectContext;
+      plan?: BusinessPlan;
     } = {
       role: 'coach',
       content: '',
       quickReplies: undefined,
       outline: undefined,
       context: undefined,
+      plan: undefined,
     };
 
     // Extract text and tool use
@@ -147,6 +176,32 @@ export class CoachingAgent {
           this.context = input.context;
           result.outline = this.outline;
           result.context = this.context;
+        } else if (block.name === 'transition_to_stage') {
+          const input = block.input as { stage: CoachingStage; summary?: string };
+          this.stage = input.stage;
+          console.log(`[CoachingAgent] Transitioned to stage: ${input.stage}`);
+        } else if (block.name === 'mark_discovery_complete') {
+          const input = block.input as { area: string; keyFindings: string[] };
+          // Store discovery findings in business profile
+          if (!this.businessProfile) {
+            this.businessProfile = {
+              snapshot: '',
+              goals: [],
+              challenges: [],
+              offers: [],
+              constraints: '',
+            };
+          }
+          this.businessProfile[input.area] = input.keyFindings;
+          console.log(`[CoachingAgent] Marked discovery area complete: ${input.area}`);
+        } else if (block.name === 'generate_business_plan') {
+          const input = block.input as { plan: BusinessPlan; businessProfile?: BusinessProfile };
+          this.plan = input.plan;
+          if (input.businessProfile) {
+            this.businessProfile = input.businessProfile;
+          }
+          result.plan = this.plan;
+          console.log(`[CoachingAgent] Generated business plan with ${input.plan.objectives.length} objectives`);
         }
       }
     }
@@ -203,7 +258,7 @@ Please revise the outline based on their feedback and generate an updated versio
       const result = await createMessageWithFallback(
         {
           max_tokens: 2048,
-          system: COACH_SYSTEM_PROMPT,
+          system: this.getSystemPrompt(),
           tools: this.getTools(),
           messages: formattedMessages as any,
         },
@@ -263,8 +318,139 @@ Please revise the outline based on their feedback and generate an updated versio
         },
       },
       {
+        name: 'transition_to_stage',
+        description: 'Mark that you are moving to a new stage in the coaching process',
+        input_schema: {
+          type: 'object' as const,
+          properties: {
+            stage: {
+              type: 'string' as const,
+              enum: ['discovery', 'plan_generation', 'support'],
+              description: 'The stage you are transitioning to',
+            },
+            summary: {
+              type: 'string' as const,
+              description: 'Brief summary of progress made in the previous stage',
+            },
+          },
+          required: ['stage'],
+        },
+      },
+      {
+        name: 'mark_discovery_complete',
+        description: 'Mark that you have gathered sufficient information about a specific discovery area',
+        input_schema: {
+          type: 'object' as const,
+          properties: {
+            area: {
+              type: 'string' as const,
+              description: 'The discovery area (e.g., business_model, audience, revenue, bottlenecks, brand_perception, etc.)',
+            },
+            keyFindings: {
+              type: 'array' as const,
+              items: { type: 'string' as const },
+              description: '2-3 key insights you learned about this area',
+            },
+          },
+          required: ['area', 'keyFindings'],
+        },
+      },
+      {
+        name: 'generate_business_plan',
+        description: 'Generate a strategic business plan based on the discovery information gathered. Use this when you have comprehensive information and are ready to create the plan.',
+        input_schema: {
+          type: 'object' as const,
+          properties: {
+            plan: {
+              type: 'object' as const,
+              description: 'The strategic business plan',
+              properties: {
+                objectives: {
+                  type: 'array' as const,
+                  items: {
+                    type: 'object' as const,
+                    properties: {
+                      id: { type: 'string' as const },
+                      description: { type: 'string' as const },
+                      measurable: { type: 'string' as const, description: 'How success is measured' },
+                    },
+                    required: ['id', 'description', 'measurable'],
+                  },
+                  description: '2-4 clear, measurable objectives aligned with user goals',
+                },
+                strategyOverview: {
+                  type: 'string' as const,
+                  description: '1-2 paragraphs summarizing the main approach',
+                },
+                phases: {
+                  type: 'array' as const,
+                  items: {
+                    type: 'object' as const,
+                    properties: {
+                      name: { type: 'string' as const },
+                      timeframe: { type: 'string' as const, description: 'e.g., "0-30 days", "30-90 days", "90+ days"' },
+                      actions: {
+                        type: 'array' as const,
+                        items: {
+                          type: 'object' as const,
+                          properties: {
+                            id: { type: 'string' as const },
+                            description: { type: 'string' as const },
+                            priority: { type: 'string' as const, enum: ['high', 'medium', 'low'] },
+                          },
+                          required: ['id', 'description', 'priority'],
+                        },
+                      },
+                    },
+                    required: ['name', 'timeframe', 'actions'],
+                  },
+                  description: '3 phases: Foundation (0-30 days), Build & Optimize (30-90 days), Scale & Refine (90+ days)',
+                },
+                metrics: {
+                  type: 'array' as const,
+                  items: {
+                    type: 'object' as const,
+                    properties: {
+                      metric: { type: 'string' as const },
+                      target: { type: 'string' as const },
+                      checkpoint: { type: 'string' as const, description: 'When to review' },
+                    },
+                    required: ['metric', 'target', 'checkpoint'],
+                  },
+                },
+                risks: {
+                  type: 'array' as const,
+                  items: {
+                    type: 'object' as const,
+                    properties: {
+                      risk: { type: 'string' as const },
+                      mitigation: { type: 'string' as const },
+                    },
+                    required: ['risk', 'mitigation'],
+                  },
+                  description: '3-5 likely obstacles with suggestions to address them',
+                },
+              },
+              required: ['objectives', 'strategyOverview', 'phases', 'metrics', 'risks'],
+            },
+            businessProfile: {
+              type: 'object' as const,
+              description: 'Summary of business information gathered during discovery',
+              properties: {
+                snapshot: { type: 'string' as const },
+                goals: { type: 'array' as const, items: { type: 'string' as const } },
+                challenges: { type: 'array' as const, items: { type: 'string' as const } },
+                offers: { type: 'array' as const, items: { type: 'string' as const } },
+                constraints: { type: 'string' as const },
+              },
+            },
+          },
+          required: ['plan'],
+        },
+      },
+      {
         name: 'generate_outline',
-        description: 'Generate the project outline when you have enough information. Call this when ready to present the strategic plan.',
+        description: 'Generate the project outline when you have enough information. Call this when ready to present the strategic plan. (Legacy tool for web project coaching)',
         input_schema: {
           type: 'object' as const,
           properties: {
