@@ -141,6 +141,17 @@ export async function deleteProject(projectId: string): Promise<void> {
 }
 
 // Coaching session operations
+
+/**
+ * Create a new coaching session in Firestore
+ * 
+ * Supports both legacy web project coaching and new multi-coach business strategy coaching:
+ * - Legacy: outline, extractedContext
+ * - New: coachType, coachingStyle, stage, businessProfile, plan
+ * 
+ * All fields are optional for backward compatibility with existing sessions.
+ * Complex objects (businessProfile, plan) are automatically serialized by Firestore.
+ */
 export async function createSession(session: Omit<CoachingSession, 'id' | 'createdAt' | 'updatedAt'>, customId?: string): Promise<CoachingSession> {
   const db = getDb();
   const sessionRef = customId 
@@ -154,7 +165,8 @@ export async function createSession(session: Omit<CoachingSession, 'id' | 'creat
     updatedAt: now,
   };
   
-  await sessionRef.set({
+  // Prepare data for Firestore (convert Date objects to Timestamps)
+  const firestoreData: any = {
     ...newSession,
     messages: newSession.messages.map(msg => ({
       ...msg,
@@ -162,11 +174,28 @@ export async function createSession(session: Omit<CoachingSession, 'id' | 'creat
     })),
     createdAt: Timestamp.fromDate(newSession.createdAt),
     updatedAt: Timestamp.fromDate(newSession.updatedAt),
-  });
+  };
+  
+  // Note: Firestore automatically handles serialization of complex objects:
+  // - businessProfile (BusinessProfile object)
+  // - plan (BusinessPlan object)
+  // - outline (ProjectOutline object)
+  // - extractedContext (ProjectContext object)
+  // These don't need special handling - Firestore stores them as nested objects
+  
+  await sessionRef.set(firestoreData);
   
   return newSession;
 }
 
+/**
+ * Get a coaching session from Firestore
+ * 
+ * Returns session with all fields, handling backward compatibility:
+ * - Legacy sessions without new fields will have undefined/null values
+ * - Complex objects (businessProfile, plan) are automatically deserialized by Firestore
+ * - Timestamps are converted to Date objects
+ */
 export async function getSession(sessionId: string): Promise<CoachingSession | null> {
   try {
     const db = getDb();
@@ -182,6 +211,8 @@ export async function getSession(sessionId: string): Promise<CoachingSession | n
       return null;
     }
     
+    // Convert Firestore data to CoachingSession format
+    // Handle backward compatibility: old sessions may not have new fields
     return {
       ...data,
       id: sessionSnap.id,
@@ -189,8 +220,10 @@ export async function getSession(sessionId: string): Promise<CoachingSession | n
         ...msg,
         timestamp: convertTimestamp(msg.timestamp),
       })),
+      // Legacy fields (for backward compatibility)
       outline: data?.outline || null,
       extractedContext: data?.extractedContext || null,
+      // New multi-coach fields (undefined if not present in old sessions)
       coachType: data?.coachType || undefined,
       coachingStyle: data?.coachingStyle || undefined,
       stage: data?.stage || undefined,
@@ -206,20 +239,38 @@ export async function getSession(sessionId: string): Promise<CoachingSession | n
   }
 }
 
+/**
+ * Update a coaching session in Firestore
+ * 
+ * Supports partial updates of any session field:
+ * - Messages: Automatically converts Date timestamps to Firestore Timestamps
+ * - Complex objects (businessProfile, plan, outline): Automatically serialized by Firestore
+ * - Stage transitions: Updates stage field
+ * - Coach switching: Updates coachType and/or coachingStyle
+ * 
+ * Note: Firestore automatically handles nested object updates.
+ * If you update businessProfile or plan, the entire object is replaced (not merged).
+ */
 export async function updateSession(sessionId: string, updates: Partial<CoachingSession>): Promise<void> {
   const db = getDb();
   const sessionRef = db.collection(sessionsCollection).doc(sessionId);
+  
+  // Prepare update data
   const updateData: any = {
     ...updates,
     updatedAt: Timestamp.fromDate(new Date()),
   };
   
+  // Convert message timestamps if messages are being updated
   if (updates.messages) {
     updateData.messages = updates.messages.map((msg: CoachMessage) => ({
       ...msg,
       timestamp: Timestamp.fromDate(msg.timestamp),
     }));
   }
+  
+  // Note: Complex objects (businessProfile, plan, outline, extractedContext)
+  // are automatically serialized by Firestore - no special handling needed
   
   await sessionRef.update(updateData);
 }
