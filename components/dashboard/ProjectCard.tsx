@@ -8,10 +8,10 @@ interface ProjectCardProps {
 }
 
 const statusColors: Record<Project['status'], string> = {
-  coaching: 'bg-yellow-100 text-yellow-800',
-  outline_ready: 'bg-blue-100 text-blue-800',
-  building: 'bg-purple-100 text-purple-800',
-  ready: 'bg-green-100 text-green-800',
+  coaching: 'bg-amber-100 text-amber-800', // Warm accent for in-progress
+  outline_ready: 'bg-blue-100 text-blue-800', // Professional blue for clarity
+  building: 'bg-orange-100 text-orange-800', // Warm accent for active work
+  ready: 'bg-green-100 text-green-800', // Professional green for growth/success
   editing: 'bg-gray-100 text-gray-800',
 };
 
@@ -29,7 +29,7 @@ export default function ProjectCard({ project }: ProjectCardProps) {
 
   return (
     <Link href={`/projects/${project.id}`}>
-      <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all cursor-pointer border border-gray-100 hover:border-blue-200">
+      <div className="card cursor-pointer">
         <div className="flex items-start justify-between mb-4">
           <h3 className="text-xl font-semibold text-gray-900 line-clamp-2">{project.name}</h3>
           <span

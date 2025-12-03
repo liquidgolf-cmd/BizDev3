@@ -97,7 +97,7 @@ export default function OutlinePreview({ outline, onApprove, onRevise, isLoading
                 onApprove(projectName.trim());
               }}
               disabled={!projectName.trim() || isLoading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors font-medium"
             >
               {isLoading ? (
                 <>
@@ -139,7 +139,7 @@ export default function OutlinePreview({ outline, onApprove, onRevise, isLoading
                 setShowRevise(false);
               }}
               disabled={!feedback.trim() || isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors font-medium"
             >
               {isLoading ? (
                 <>
