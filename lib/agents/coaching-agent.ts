@@ -119,7 +119,6 @@ ${stageInstructions}`;
       strategy: 'Strategy & Clarity',
       brand: 'Brand & Positioning',
       marketing: 'Marketing & Sales',
-      leadership: 'Leadership & Vision',
       customer_experience: 'Customer Experience',
     };
 
@@ -127,13 +126,13 @@ ${stageInstructions}`;
       mentor: 'Mentor',
       realist: 'Realist',
       strategist: 'Strategist',
+      accountability_partner: 'Accountability Partner',
     };
 
     const openingMessages: Record<CoachType, string> = {
       strategy: "Thanks for choosing the Strategy & Clarity Coach. I'll start with a quick audit so I can build a tailored plan for you. I'll ask a series of questions about your business, goals, and current situation. Answer in as much detail as you can, even if things feel messy. Ready? Let's start with a quick snapshot of your business.",
       brand: "Thanks for choosing the Brand & Positioning Coach. I'll help you stand out in your market and create a compelling brand identity. Let's start by understanding your current brand and where you want to take it. Ready?",
       marketing: "Thanks for choosing the Marketing & Sales Coach. I'll help you grow your customer base and optimize your sales process. Let's start by understanding your current marketing and sales situation. Ready?",
-      leadership: "Thanks for choosing the Leadership & Vision Coach. I'll help you clarify your vision, build effective teams, and make confident decisions. Let's start by understanding your current leadership situation and goals. Ready?",
       customer_experience: "Thanks for choosing the Customer Experience Coach. I'll help you design exceptional customer journeys and build systems for retention and referrals. Let's start by understanding your current customer experience. Ready?",
     };
 

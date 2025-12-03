@@ -17,7 +17,6 @@ const coachNames: Record<CoachType, string> = {
   strategy: 'Strategy & Clarity',
   brand: 'Brand & Positioning',
   marketing: 'Marketing & Sales',
-  leadership: 'Leadership & Vision',
   customer_experience: 'Customer Experience',
 };
 
@@ -25,6 +24,7 @@ const styleNames: Record<CoachingStyle, string> = {
   mentor: 'Mentor',
   realist: 'Realist',
   strategist: 'Strategist',
+  accountability_partner: 'Accountability Partner',
 };
 
 const stageNames: Record<CoachingStage, string> = {
@@ -311,7 +311,7 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
               Choose a different coach to continue your session. Your conversation history will be preserved.
             </p>
             <div className="space-y-2 mb-4">
-              {(['strategy', 'brand', 'marketing', 'leadership', 'customer_experience'] as CoachType[]).map((type) => (
+              {(['strategy', 'brand', 'marketing', 'customer_experience'] as CoachType[]).map((type) => (
                 <button
                   key={type}
                   onClick={() => switchCoach(type)}

@@ -25,7 +25,7 @@ export async function POST(
     }
 
     // Validate coachType
-    const validCoachTypes: CoachType[] = ['strategy', 'brand', 'marketing', 'leadership', 'customer_experience'];
+    const validCoachTypes: CoachType[] = ['strategy', 'brand', 'marketing', 'customer_experience'];
     if (!validCoachTypes.includes(coachType)) {
       return NextResponse.json(
         { error: 'Invalid coach type' },

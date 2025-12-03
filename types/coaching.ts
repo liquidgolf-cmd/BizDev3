@@ -5,11 +5,10 @@ export type CoachType =
   | 'strategy' 
   | 'brand' 
   | 'marketing' 
-  | 'leadership' 
   | 'customer_experience';
 
 // Coaching Styles (personality/approach variations)
-export type CoachingStyle = 'mentor' | 'realist' | 'strategist';
+export type CoachingStyle = 'mentor' | 'realist' | 'strategist' | 'accountability_partner';
 
 // Coaching Stages
 export type CoachingStage = 'discovery' | 'plan_generation' | 'support';

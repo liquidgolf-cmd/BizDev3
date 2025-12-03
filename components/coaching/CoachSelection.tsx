@@ -81,26 +81,6 @@ const coaches: CoachInfo[] = [
     color: 'green',
   },
   {
-    type: 'leadership',
-    name: 'Leadership & Vision',
-    tagline: 'Lead with clarity and purpose',
-    description: 'Clarify your vision, build effective teams, and make confident decisions as a leader.',
-    helpsWith: [
-      'Vision & values',
-      'Team structure',
-      'Decision-making',
-      'Leadership development'
-    ],
-    exampleOutcomes: [
-      'Clear vision statement',
-      'Team structure plan',
-      'Decision framework',
-      'Leadership roadmap'
-    ],
-    icon: '👔',
-    color: 'indigo',
-  },
-  {
     type: 'customer_experience',
     name: 'Customer Experience',
     tagline: 'Delight your customers',
@@ -148,14 +128,6 @@ const coachColors: Record<CoachType, { bg: string; border: string; tagline: stri
     selected: 'bg-green-100 border-green-500',
     checkmark: 'bg-green-600',
   },
-  leadership: {
-    bg: 'bg-indigo-50',
-    border: 'border-indigo-200',
-    tagline: 'text-indigo-700',
-    bullet: 'text-indigo-600',
-    selected: 'bg-indigo-100 border-indigo-500',
-    checkmark: 'bg-indigo-600',
-  },
   customer_experience: {
     bg: 'bg-pink-50',
     border: 'border-pink-200',
@@ -184,6 +156,12 @@ const styles: { type: CoachingStyle; name: string; description: string; icon: st
     name: 'Strategist',
     description: 'Analytical, data-driven, and systematic. Breaks down complex problems with structured, logical thinking.',
     icon: '🧠',
+  },
+  {
+    type: 'accountability_partner',
+    name: 'Accountability Partner',
+    description: 'Focused on check-ins, deadlines, and follow-through. Helps you stay on track and complete your goals.',
+    icon: '📋',
   },
 ];
 
@@ -240,18 +218,20 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
                 >
                   {/* Card Content - Not clickable */}
                   <div className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <span className="text-4xl">{coach.icon}</span>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl">{coach.icon}</span>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-semibold text-gray-900">{coach.name}</h3>
+                        <p className={`text-sm ${colors.tagline} font-medium`}>{coach.tagline}</p>
+                      </div>
                       {isSelected && (
-                        <div className={`w-6 h-6 ${colors.checkmark} rounded-full flex items-center justify-center`}>
+                        <div className={`w-6 h-6 ${colors.checkmark} rounded-full flex items-center justify-center flex-shrink-0`}>
                           <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
                         </div>
                       )}
                     </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{coach.name}</h3>
-                    <p className={`text-sm ${colors.tagline} font-medium mb-4`}>{coach.tagline}</p>
 
                     {/* Select Button */}
                     <button
@@ -311,7 +291,7 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
         {selectedCoach && (
           <div className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">Choose Your Coaching Style</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {styles.map((style) => (
                 <button
                   key={style.type}
