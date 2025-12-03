@@ -35,26 +35,44 @@ export class CoachingAgent {
       stageInstructions = `
 CURRENT STAGE: Discovery
 - You are in the discovery phase
-- Ask probing questions to gather information
-- Use mark_discovery_complete tool when you've gathered enough info about a specific area
-- When you have comprehensive information, use transition_to_stage('plan_generation') to move forward`;
+- Ask probing questions to gather information (2-3 questions at a time, max)
+- Use mark_discovery_complete tool when you've gathered enough info about a specific discovery area
+- Track your progress: you need comprehensive information across all discovery areas before moving forward
+- When you have solid information across all discovery areas, use transition_to_stage('plan_generation') to move forward
+- Don't rush - make sure you understand their situation deeply before generating a plan`;
     } else if (this.stage === 'plan_generation') {
       stageInstructions = `
 CURRENT STAGE: Plan Generation
-- You have completed discovery
+- You have completed discovery and gathered comprehensive information
 - Generate a strategic business plan using the generate_business_plan tool
-- The plan should include: objectives (2-4, measurable), strategy overview, 3 phases with actions, metrics, and risks
-- Make it specific to their business, not generic
-- After generating the plan, use transition_to_stage('support') to enter support mode`;
+- The plan MUST include:
+  * objectives: 2-4 clear, measurable objectives aligned with their goals
+  * strategyOverview: 1-2 paragraphs summarizing the main approach
+  * phases: 3 phases (Foundation 0-30 days, Build & Optimize 30-90 days, Scale & Refine 90+ days) with specific actions
+  * metrics: What to track, targets, and when to review
+  * risks: 3-5 likely obstacles with mitigation strategies
+- Make it specific to THEIR business, not generic
+- Base it on the information you gathered during discovery
+- After generating the plan, automatically transition to support mode`;
     } else if (this.stage === 'support') {
+      const planContext = this.plan 
+        ? `\n\nCURRENT PLAN CONTEXT:
+- Objectives: ${this.plan.objectives.map(o => o.description).join(', ')}
+- Phases: ${this.plan.phases.map(p => p.name).join(', ')}
+- Key Metrics: ${this.plan.metrics.map(m => m.metric).join(', ')}
+Reference this plan when helping the user.`
+        : '';
+      
       stageInstructions = `
 CURRENT STAGE: Support Mode
-- A strategic plan has been generated and approved
+- A strategic plan has been generated${this.plan ? ' and is available' : ''}
 - Help the user implement the plan
 - Reference specific actions from the plan when relevant
-- Help them overcome obstacles
-- Adjust the plan if needed based on new information
-- Be practical and actionable`;
+- Help them overcome obstacles they encounter
+- Adjust the plan if needed based on new information or changing circumstances
+- Be practical and actionable
+- Answer questions about implementation
+- Provide guidance on executing specific actions from the plan${planContext}`;
     }
     
     return `${basePrompt}
@@ -62,6 +80,38 @@ CURRENT STAGE: Support Mode
 ${styleModifier}
 
 ${stageInstructions}`;
+  }
+
+  /**
+   * Update coach type and style (for switching coaches mid-session)
+   */
+  updateCoach(coachType: CoachType, coachingStyle?: CoachingStyle): void {
+    this.coachType = coachType;
+    if (coachingStyle) {
+      this.coachingStyle = coachingStyle;
+    }
+    console.log(`[CoachingAgent] Updated coach: ${coachType} (${this.coachingStyle} style)`);
+  }
+
+  /**
+   * Get current stage
+   */
+  getStage(): CoachingStage {
+    return this.stage;
+  }
+
+  /**
+   * Get current coach type
+   */
+  getCoachType(): CoachType {
+    return this.coachType;
+  }
+
+  /**
+   * Get current coaching style
+   */
+  getCoachingStyle(): CoachingStyle {
+    return this.coachingStyle;
   }
 
   async startSession(): Promise<{ content: string; quickReplies?: QuickReply[] }> {
@@ -179,7 +229,11 @@ ${stageInstructions}`;
         } else if (block.name === 'transition_to_stage') {
           const input = block.input as { stage: CoachingStage; summary?: string };
           this.stage = input.stage;
-          console.log(`[CoachingAgent] Transitioned to stage: ${input.stage}`);
+          console.log(`[CoachingAgent] Transitioned to stage: ${input.stage}${input.summary ? ` - ${input.summary}` : ''}`);
+          // Update result to include stage transition info in response
+          if (input.summary) {
+            result.content += `\n\n[Stage transition: ${input.stage}]`;
+          }
         } else if (block.name === 'mark_discovery_complete') {
           const input = block.input as { area: string; keyFindings: string[] };
           // Store discovery findings in business profile
@@ -193,7 +247,9 @@ ${stageInstructions}`;
             };
           }
           this.businessProfile[input.area] = input.keyFindings;
-          console.log(`[CoachingAgent] Marked discovery area complete: ${input.area}`);
+          console.log(`[CoachingAgent] Marked discovery area complete: ${input.area}`, {
+            keyFindings: input.keyFindings,
+          });
         } else if (block.name === 'generate_business_plan') {
           const input = block.input as { plan: BusinessPlan; businessProfile?: BusinessProfile };
           this.plan = input.plan;
@@ -201,7 +257,9 @@ ${stageInstructions}`;
             this.businessProfile = input.businessProfile;
           }
           result.plan = this.plan;
-          console.log(`[CoachingAgent] Generated business plan with ${input.plan.objectives.length} objectives`);
+          // Transition to support mode after plan generation
+          this.stage = 'support';
+          console.log(`[CoachingAgent] Generated business plan with ${input.plan.objectives.length} objectives, ${input.plan.phases.length} phases`);
         }
       }
     }
