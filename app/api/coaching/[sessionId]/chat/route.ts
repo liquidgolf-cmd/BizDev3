@@ -45,7 +45,19 @@ export async function POST(
     agent.context = dbSession.extractedContext;
 
     // Process message
-    const response = await agent.chat(message);
+    let response;
+    try {
+      response = await agent.chat(message);
+    } catch (agentError: any) {
+      console.error('[Chat Route] Error in agent.chat:', agentError);
+      console.error('[Chat Route] Agent error details:', {
+        message: agentError?.message,
+        stack: agentError?.stack,
+        name: agentError?.name,
+        cause: agentError?.cause,
+      });
+      throw agentError; // Re-throw to be caught by outer try-catch
+    }
 
     // Update session status if outline was generated
     let newStatus = dbSession.status;
@@ -63,17 +75,38 @@ export async function POST(
 
     return NextResponse.json(response);
   } catch (error: any) {
-    console.error('Error in coaching chat:', error);
-    console.error('Error details:', {
+    // Log comprehensive error information
+    const errorDetails = {
       message: error?.message,
       stack: error?.stack,
       code: error?.code,
+      status: error?.status,
+      statusCode: error?.statusCode,
       name: error?.name,
-    });
+      type: error?.type,
+      cause: error?.cause,
+      fullError: String(error),
+    };
+    
+    console.error('[Chat Route] Error in coaching chat:', errorDetails);
+    console.error('[Chat Route] Full error object:', error);
+    
+    // Extract more specific error message
+    let errorMessage = 'Failed to process message';
+    if (error?.message) {
+      errorMessage = error.message;
+      // If it's a model error, provide more context
+      if (error.message.includes('model') || error.message.includes('404')) {
+        errorMessage = 'AI model unavailable. Please try again in a moment.';
+      } else if (error.message.includes('ANTHROPIC_API_KEY')) {
+        errorMessage = 'AI service configuration error. Please contact support.';
+      }
+    }
+    
     return NextResponse.json(
       { 
-        error: 'Failed to process message',
-        details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+        error: errorMessage,
+        details: process.env.NODE_ENV === 'development' ? errorDetails : undefined
       },
       { status: 500 }
     );

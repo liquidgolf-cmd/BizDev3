@@ -90,6 +90,8 @@ export class CoachingAgent {
     // Call Claude with coaching prompt (using model fallback)
     let response;
     try {
+      console.log('[CoachingAgent] Calling Anthropic API with model fallback...');
+      console.log('[CoachingAgent] Message count:', formattedMessages.length);
       const result = await createMessageWithFallback(
         {
           max_tokens: 2048,
@@ -101,9 +103,19 @@ export class CoachingAgent {
       );
       response = result.response;
       console.log(`[CoachingAgent] Successfully got response from model: ${result.model}`);
+      console.log(`[CoachingAgent] Response content blocks: ${response.content.length}`);
     } catch (error: any) {
-      console.error('[CoachingAgent] Error calling Anthropic API:', error);
-      throw new Error(`Failed to get AI response: ${error?.message || 'Unknown error'}`);
+      console.error('[CoachingAgent] Error calling Anthropic API:', {
+        message: error?.message,
+        stack: error?.stack,
+        status: error?.status,
+        statusCode: error?.statusCode,
+        name: error?.name,
+        error: error,
+      });
+      // Re-throw with more context
+      const errorMsg = error?.message || 'Unknown error';
+      throw new Error(`Failed to get AI response: ${errorMsg}`);
     }
 
     // Process response

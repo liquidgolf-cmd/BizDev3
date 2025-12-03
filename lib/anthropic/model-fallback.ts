@@ -112,27 +112,50 @@ export async function createMessageWithFallback(
   options: Omit<Anthropic.Messages.MessageCreateParams, 'model'>,
   modelPriority: ModelPriorityType = 'PRIMARY_COACH'
 ): Promise<{ response: Anthropic.Messages.Message; model: string }> {
-  const anthropic = getAnthropicClient();
-  
-  const result = await callWithModelFallback(
-    async (model) => {
-      const response = await anthropic.messages.create({
-        ...options,
-        model,
-      } as Anthropic.Messages.MessageCreateParams);
-      
-      // Ensure we return a Message, not a Stream
-      if ('content' in response) {
-        return response as Anthropic.Messages.Message;
-      }
-      throw new Error('Streaming response not supported');
-    },
-    modelPriority
-  );
-  
-  return {
-    response: result.result,
-    model: result.model,
-  };
+  try {
+    const anthropic = getAnthropicClient();
+    console.log('[createMessageWithFallback] Starting with model priority:', modelPriority);
+    
+    const result = await callWithModelFallback(
+      async (model) => {
+        console.log('[createMessageWithFallback] Attempting API call with model:', model);
+        try {
+          const response = await anthropic.messages.create({
+            ...options,
+            model,
+          } as Anthropic.Messages.MessageCreateParams);
+          
+          console.log('[createMessageWithFallback] API call successful, response type:', typeof response);
+          
+          // Ensure we return a Message, not a Stream
+          if ('content' in response) {
+            return response as Anthropic.Messages.Message;
+          }
+          throw new Error('Streaming response not supported - received stream instead of message');
+        } catch (apiError: any) {
+          console.error('[createMessageWithFallback] API call failed for model:', model, {
+            error: apiError,
+            message: apiError?.message,
+            status: apiError?.status,
+          });
+          throw apiError; // Re-throw to be handled by fallback
+        }
+      },
+      modelPriority
+    );
+    
+    console.log('[createMessageWithFallback] Successfully got response from model:', result.model);
+    return {
+      response: result.result,
+      model: result.model,
+    };
+  } catch (error: any) {
+    console.error('[createMessageWithFallback] Fatal error:', {
+      message: error?.message,
+      stack: error?.stack,
+      error: error,
+    });
+    throw error;
+  }
 }
 
