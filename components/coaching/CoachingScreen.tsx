@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CoachMessage, ProjectOutline, CoachType, CoachingStyle, CoachingStage } from '@/types/coaching';
+import { CoachMessage, ProjectOutline, BusinessPlan, CoachType, CoachingStyle, CoachingStage } from '@/types/coaching';
 import QuickReplyButtons from './QuickReplyButtons';
 import OutlinePreview from './OutlinePreview';
+import BusinessPlanPreview from './BusinessPlanPreview';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/components/ui/ToastContainer';
 
@@ -37,6 +38,7 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [outline, setOutline] = useState<ProjectOutline | null>(null);
+  const [plan, setPlan] = useState<BusinessPlan | null>(null);
   const [coachType, setCoachType] = useState<CoachType | null>(null);
   const [coachingStyle, setCoachingStyle] = useState<CoachingStyle | null>(null);
   const [stage, setStage] = useState<CoachingStage | null>(null);
@@ -62,7 +64,8 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
       if (response.ok) {
         const data = await response.json();
         setMessages(data.messages || []);
-        setOutline(data.outline);
+        setOutline(data.outline || null);
+        setPlan(data.plan || null);
         if (data.coachType) setCoachType(data.coachType);
         if (data.coachingStyle) setCoachingStyle(data.coachingStyle);
         if (data.stage) setStage(data.stage);
@@ -149,6 +152,8 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
         hasContent: !!data.content,
         hasQuickReplies: !!data.quickReplies,
         hasOutline: !!data.outline,
+        hasPlan: !!data.plan,
+        stage: data.stage,
       });
       const coachMessage: CoachMessage = {
         role: 'coach',
@@ -159,8 +164,17 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
 
       setMessages(prev => [...prev, coachMessage]);
 
+      // Update outline (legacy) or plan (new)
       if (data.outline) {
         setOutline(data.outline);
+      }
+      if (data.plan) {
+        setPlan(data.plan);
+      }
+      
+      // Update stage if provided
+      if (data.stage) {
+        setStage(data.stage);
       }
     } catch (error: any) {
       console.error('Error sending message:', error);
@@ -360,7 +374,16 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
               </div>
             </div>
           )}
-          {outline && (
+          {/* Show BusinessPlan if available (new format), otherwise show Outline (legacy) */}
+          {plan && (
+            <BusinessPlanPreview
+              plan={plan}
+              onApprove={handleApprove}
+              onRevise={handleRevise}
+              isLoading={isLoading}
+            />
+          )}
+          {!plan && outline && (
             <OutlinePreview
               outline={outline}
               onApprove={handleApprove}

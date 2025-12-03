@@ -14,6 +14,7 @@ export class ProjectService {
       name,
       status: 'coaching',
       outline: null,
+      plan: null,
       context: null,
       briefGenerated: false,
     });
@@ -54,6 +55,7 @@ export class ProjectService {
       name: newName || `${originalProject.name} (Copy)`,
       status: 'coaching',
       outline: originalProject.outline,
+      plan: originalProject.plan,
       context: originalProject.context,
       briefGenerated: false,
     });

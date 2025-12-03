@@ -47,19 +47,21 @@ export async function POST(
     if (dbSession.plan) {
       // New business plan format
       await projectService.updateProject(project.id, {
+        plan: dbSession.plan,
         outline: null, // Clear legacy outline
         context: dbSession.extractedContext,
         status: 'outline_ready',
-        // Note: Project type may need to be updated to support BusinessPlan
-        // For now, we'll store plan data in a way that's compatible
       });
-    } else {
+    } else if (dbSession.outline) {
       // Legacy web project outline format
       await projectService.updateProject(project.id, {
         outline: dbSession.outline,
+        plan: null, // Clear new plan field
         context: dbSession.extractedContext,
         status: 'outline_ready',
       });
+    } else {
+      throw new Error('No plan or outline to approve');
     }
 
     return NextResponse.json({
