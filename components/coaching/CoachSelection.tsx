@@ -122,6 +122,50 @@ const coaches: CoachInfo[] = [
   },
 ];
 
+// Color mapping for each coach type
+const coachColors: Record<CoachType, { bg: string; border: string; tagline: string; bullet: string; selected: string; checkmark: string }> = {
+  strategy: {
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    tagline: 'text-blue-700',
+    bullet: 'text-blue-600',
+    selected: 'bg-blue-100 border-blue-500',
+    checkmark: 'bg-blue-600',
+  },
+  brand: {
+    bg: 'bg-purple-50',
+    border: 'border-purple-200',
+    tagline: 'text-purple-700',
+    bullet: 'text-purple-600',
+    selected: 'bg-purple-100 border-purple-500',
+    checkmark: 'bg-purple-600',
+  },
+  marketing: {
+    bg: 'bg-green-50',
+    border: 'border-green-200',
+    tagline: 'text-green-700',
+    bullet: 'text-green-600',
+    selected: 'bg-green-100 border-green-500',
+    checkmark: 'bg-green-600',
+  },
+  leadership: {
+    bg: 'bg-indigo-50',
+    border: 'border-indigo-200',
+    tagline: 'text-indigo-700',
+    bullet: 'text-indigo-600',
+    selected: 'bg-indigo-100 border-indigo-500',
+    checkmark: 'bg-indigo-600',
+  },
+  customer_experience: {
+    bg: 'bg-pink-50',
+    border: 'border-pink-200',
+    tagline: 'text-pink-700',
+    bullet: 'text-pink-600',
+    selected: 'bg-pink-100 border-pink-500',
+    checkmark: 'bg-pink-600',
+  },
+};
+
 const styles: { type: CoachingStyle; name: string; description: string; icon: string }[] = [
   {
     type: 'mentor',
@@ -154,7 +198,7 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
@@ -170,44 +214,48 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
         <div className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-6">Select Your Coach</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {coaches.map((coach) => (
-              <button
-                key={coach.type}
-                onClick={() => setSelectedCoach(coach.type)}
-                className={`card text-left transition-all ${
-                  selectedCoach === coach.type
-                    ? 'ring-2 ring-blue-600 border-blue-600'
-                    : 'hover:border-blue-300'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <span className="text-4xl">{coach.icon}</span>
-                  {selectedCoach === coach.type && (
-                    <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{coach.name}</h3>
-                <p className="text-sm text-blue-600 font-medium mb-3">{coach.tagline}</p>
-                <p className="text-sm text-gray-600 mb-4">{coach.description}</p>
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-xs font-semibold text-gray-700 mb-1">Helps with:</p>
-                    <ul className="text-xs text-gray-600 space-y-1">
-                      {coach.helpsWith.map((item, idx) => (
-                        <li key={idx} className="flex items-start">
-                          <span className="text-blue-600 mr-1">•</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+            {coaches.map((coach) => {
+              const colors = coachColors[coach.type];
+              const isSelected = selectedCoach === coach.type;
+              return (
+                <button
+                  key={coach.type}
+                  onClick={() => setSelectedCoach(coach.type)}
+                  className={`text-left transition-all border-2 rounded-lg p-6 shadow-md hover:shadow-lg ${
+                    isSelected
+                      ? `${colors.selected} ring-2 ring-offset-2 ring-blue-500`
+                      : `${colors.bg} ${colors.border} hover:shadow-xl`
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <span className="text-4xl">{coach.icon}</span>
+                    {isSelected && (
+                      <div className={`w-6 h-6 ${colors.checkmark} rounded-full flex items-center justify-center`}>
+                        <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </button>
-            ))}
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{coach.name}</h3>
+                  <p className={`text-sm ${colors.tagline} font-medium mb-3`}>{coach.tagline}</p>
+                  <p className="text-sm text-gray-700 mb-4">{coach.description}</p>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800 mb-1">Helps with:</p>
+                      <ul className="text-xs text-gray-700 space-y-1">
+                        {coach.helpsWith.map((item, idx) => (
+                          <li key={idx} className="flex items-start">
+                            <span className={`${colors.bullet} mr-1`}>•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -220,10 +268,10 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
                 <button
                   key={style.type}
                   onClick={() => setSelectedStyle(style.type)}
-                  className={`card text-left transition-all ${
+                  className={`text-left transition-all border-2 rounded-lg p-4 shadow-md hover:shadow-lg ${
                     selectedStyle === style.type
-                      ? 'ring-2 ring-blue-600 border-blue-600 bg-blue-50'
-                      : 'hover:border-blue-300'
+                      ? 'ring-2 ring-blue-600 border-blue-500 bg-blue-100'
+                      : 'bg-white border-gray-200 hover:border-blue-300'
                   }`}
                 >
                   <div className="flex items-center mb-3">
@@ -237,7 +285,7 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
                       </div>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600">{style.description}</p>
+                  <p className="text-sm text-gray-700">{style.description}</p>
                 </button>
               ))}
             </div>
