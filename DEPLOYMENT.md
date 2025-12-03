@@ -117,7 +117,7 @@ This application is designed to run exclusively on Vercel. All configuration is 
 
 ## Architecture Notes
 
-- **Claude Model:** Using `claude-3-5-sonnet-20241022` (Claude Sonnet 4.5)
+- **Claude Model:** Using `claude-sonnet-4-5-20250514` (Claude Sonnet 4.5) with fallback to `claude-sonnet-4-20250514`
 - **Authentication:** NextAuth.js v5 beta with Google OAuth and Email/Password
 - **Database:** Firebase Firestore with security rules
 - **Deployment:** Vercel serverless functions

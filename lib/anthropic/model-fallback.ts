@@ -5,18 +5,18 @@ import Anthropic from '@anthropic-ai/sdk';
  * Model fallback configuration for different use cases
  */
 export const MODEL_PRIORITIES = {
-  // Primary AI Coach - tries most reliable first, falls back to older models
-  // Using standard Anthropic model identifiers
+  // Primary AI Coach - tries newest first, falls back to older models
+  // Using current Claude 4 and 4.5 Sonnet models (Claude 3.x models are deprecated)
   PRIMARY_COACH: [
-    'claude-3-5-sonnet-20240620', // Claude 3.5 Sonnet (June 2024) - most reliable
-    'claude-3-sonnet-20240229',   // Claude 3 Sonnet (fallback)
-    'claude-3-haiku-20240307',    // Claude 3 Haiku (last resort - fastest, cheapest)
-    // Note: claude-3-opus may require special access or higher tier
+    'claude-sonnet-4-5-20250514', // Claude Sonnet 4.5 (latest - May 2025)
+    'claude-sonnet-4-20250514',   // Claude Sonnet 4 (May 2025) - fallback
+    'claude-opus-4-20250514',     // Claude Opus 4 (fallback if Sonnet unavailable)
+    'claude-opus-4-1-20250805',   // Claude Opus 4.1 (last resort)
   ],
   // Weekly Coaching Session
-  WEEKLY_COACHING: ['claude-3-5-sonnet-20240620'],
+  WEEKLY_COACHING: ['claude-sonnet-4-5-20250514'],
   // Reports Generation
-  REPORTS: ['claude-3-5-sonnet-20240620'],
+  REPORTS: ['claude-sonnet-4-5-20250514'],
 } as const;
 
 export type ModelPriorityType = keyof typeof MODEL_PRIORITIES;
