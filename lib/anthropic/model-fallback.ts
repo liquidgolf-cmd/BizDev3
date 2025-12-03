@@ -57,7 +57,7 @@ export async function callWithModelFallback<T>(
       const isNotFoundError = errorMessage.includes('not_found_error') || 
                              errorMessage.includes('model:') ||
                              parsedStatus === 404 ||
-                             errorMessage.match(/404\s*\{/); // Matches "404 {" pattern
+                             /404\s*\{/.test(errorMessage); // Matches "404 {" pattern
       
       console.warn(`[Model Fallback] Model ${model} failed:`, {
         status: parsedStatus,
