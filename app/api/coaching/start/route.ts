@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate coachingStyle
-    const validStyles: CoachingStyle[] = ['mentor', 'realist', 'strategist'];
+    const validStyles: CoachingStyle[] = ['mentor', 'realist', 'strategist', 'accountability_partner'];
     if (!validStyles.includes(coachingStyle)) {
       return NextResponse.json(
         { error: 'Invalid coaching style' },
@@ -71,6 +71,18 @@ export async function POST(request: NextRequest) {
       }, sessionId);
     } catch (dbError: any) {
       console.error('Error saving session to database:', dbError);
+      console.error('Database error details:', {
+        message: dbError?.message,
+        stack: dbError?.stack,
+        code: dbError?.code,
+        name: dbError?.name,
+        sessionData: {
+          userId: session.user.email,
+          coachType,
+          coachingStyle,
+          messageCount: 1,
+        },
+      });
       return NextResponse.json(
         { 
           error: 'Failed to save session',

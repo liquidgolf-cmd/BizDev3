@@ -35,7 +35,7 @@ export async function POST(
 
     // Validate coachingStyle if provided
     if (coachingStyle) {
-      const validStyles: CoachingStyle[] = ['mentor', 'realist', 'strategist'];
+      const validStyles: CoachingStyle[] = ['mentor', 'realist', 'strategist', 'accountability_partner'];
       if (!validStyles.includes(coachingStyle)) {
         return NextResponse.json(
           { error: 'Invalid coaching style' },
