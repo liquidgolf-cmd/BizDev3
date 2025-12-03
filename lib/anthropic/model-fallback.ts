@@ -6,11 +6,12 @@ import Anthropic from '@anthropic-ai/sdk';
  */
 export const MODEL_PRIORITIES = {
   // Primary AI Coach - tries most reliable first, falls back to older models
+  // Using standard Anthropic model identifiers
   PRIMARY_COACH: [
-    'claude-3-5-sonnet-20240620', // Claude 3.5 Sonnet, June 2024 (most reliable - confirmed available)
-    'claude-3-sonnet-20240229',   // Claude 3.0 Sonnet, fallback
-    'claude-3-opus-20240229',     // Claude 3 Opus as last resort
-    // Note: claude-3-5-sonnet-20241022 may not be available in all regions/accounts
+    'claude-3-5-sonnet-20240620', // Claude 3.5 Sonnet (June 2024) - most reliable
+    'claude-3-sonnet-20240229',   // Claude 3 Sonnet (fallback)
+    'claude-3-haiku-20240307',    // Claude 3 Haiku (last resort - fastest, cheapest)
+    // Note: claude-3-opus may require special access or higher tier
   ],
   // Weekly Coaching Session
   WEEKLY_COACHING: ['claude-3-5-sonnet-20240620'],
@@ -52,9 +53,11 @@ export async function callWithModelFallback<T>(
       }
       
       // Check if error message contains "not_found_error" or "model:" (Anthropic API format)
+      // Anthropic errors often have format: "404 {...}" or "not_found_error"
       const isNotFoundError = errorMessage.includes('not_found_error') || 
-                             (errorMessage.includes('model:') && errorMessage.includes('not found')) ||
-                             parsedStatus === 404;
+                             errorMessage.includes('model:') ||
+                             parsedStatus === 404 ||
+                             errorMessage.match(/404\s*\{/); // Matches "404 {" pattern
       
       console.warn(`[Model Fallback] Model ${model} failed:`, {
         status: parsedStatus,
