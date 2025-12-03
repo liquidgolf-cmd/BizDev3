@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { CoachMessage, ProjectOutline } from '@/types/coaching';
+import { CoachMessage, ProjectOutline, CoachType, CoachingStyle, CoachingStage } from '@/types/coaching';
 import QuickReplyButtons from './QuickReplyButtons';
 import OutlinePreview from './OutlinePreview';
 import { useRouter } from 'next/navigation';
@@ -12,11 +12,35 @@ interface CoachingScreenProps {
   onComplete?: (projectId: string) => void;
 }
 
+const coachNames: Record<CoachType, string> = {
+  strategy: 'Strategy & Clarity',
+  brand: 'Brand & Positioning',
+  marketing: 'Marketing & Sales',
+  leadership: 'Leadership & Vision',
+  customer_experience: 'Customer Experience',
+};
+
+const styleNames: Record<CoachingStyle, string> = {
+  mentor: 'Mentor',
+  realist: 'Realist',
+  strategist: 'Strategist',
+};
+
+const stageNames: Record<CoachingStage, string> = {
+  discovery: 'Discovery',
+  plan_generation: 'Plan Generation',
+  support: 'Support Mode',
+};
+
 export default function CoachingScreen({ sessionId, onComplete }: CoachingScreenProps) {
   const [messages, setMessages] = useState<CoachMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [outline, setOutline] = useState<ProjectOutline | null>(null);
+  const [coachType, setCoachType] = useState<CoachType | null>(null);
+  const [coachingStyle, setCoachingStyle] = useState<CoachingStyle | null>(null);
+  const [stage, setStage] = useState<CoachingStage | null>(null);
+  const [showSwitchModal, setShowSwitchModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const toast = useToast();
@@ -39,9 +63,46 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
         const data = await response.json();
         setMessages(data.messages || []);
         setOutline(data.outline);
+        if (data.coachType) setCoachType(data.coachType);
+        if (data.coachingStyle) setCoachingStyle(data.coachingStyle);
+        if (data.stage) setStage(data.stage);
       }
     } catch (error) {
       console.error('Error fetching session:', error);
+    }
+  }
+
+  async function switchCoach(newCoachType: CoachType, newStyle?: CoachingStyle) {
+    if (!sessionId) return;
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/coaching/${sessionId}/switch-coach`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          coachType: newCoachType,
+          coachingStyle: newStyle || coachingStyle 
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Failed to switch coach');
+      }
+
+      const data = await response.json();
+      setCoachType(data.coachType);
+      setCoachingStyle(data.coachingStyle);
+      setShowSwitchModal(false);
+      toast.showSuccess(`Switched to ${coachNames[newCoachType]} coach`);
+      
+      // Refresh session to get updated messages
+      await fetchSession();
+    } catch (error: any) {
+      console.error('Error switching coach:', error);
+      toast.showError(error.message || 'Failed to switch coach. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -193,6 +254,77 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+      {/* Header with Coach Info */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            {coachType && (
+              <>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {coachNames[coachType]}
+                  </p>
+                  {coachingStyle && (
+                    <p className="text-xs text-gray-500">
+                      {styleNames[coachingStyle]} Style
+                    </p>
+                  )}
+                </div>
+                {stage && (
+                  <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                    {stageNames[stage]}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <button
+            onClick={() => setShowSwitchModal(true)}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            disabled={isLoading}
+          >
+            Switch Coach
+          </button>
+        </div>
+      </div>
+
+      {/* Switch Coach Modal */}
+      {showSwitchModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Switch Coach</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Choose a different coach to continue your session. Your conversation history will be preserved.
+            </p>
+            <div className="space-y-2 mb-4">
+              {(['strategy', 'brand', 'marketing', 'leadership', 'customer_experience'] as CoachType[]).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => switchCoach(type)}
+                  disabled={isLoading || coachType === type}
+                  className={`w-full text-left px-4 py-2 rounded-lg border transition-all ${
+                    coachType === type
+                      ? 'bg-blue-50 border-blue-300 text-blue-900'
+                      : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                  } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <div className="font-medium">{coachNames[type]}</div>
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSwitchModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                disabled={isLoading}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.map((message, index) => (

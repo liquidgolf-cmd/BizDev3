@@ -1,27 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CoachingScreen from '@/components/coaching/CoachingScreen';
+import CoachSelection from '@/components/coaching/CoachSelection';
 import { useToast } from '@/components/ui/ToastContainer';
+import { CoachType, CoachingStyle } from '@/types/coaching';
 
 export default function NewCoachingPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isStarting, setIsStarting] = useState(true);
+  const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCoachSelection, setShowCoachSelection] = useState(true);
   const router = useRouter();
   const toast = useToast();
 
-  useEffect(() => {
-    startSession();
-  }, []);
-
-  async function startSession() {
+  async function startSession(coachType: CoachType, coachingStyle: CoachingStyle) {
     try {
       setIsStarting(true);
       setError(null);
       const response = await fetch('/api/coaching/start', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coachType, coachingStyle }),
       });
 
       if (!response.ok) {
@@ -35,6 +36,7 @@ export default function NewCoachingPage() {
       }
       
       setSessionId(data.sessionId);
+      setShowCoachSelection(false);
       setIsStarting(false);
     } catch (error: any) {
       console.error('Error starting session:', error);
@@ -45,39 +47,40 @@ export default function NewCoachingPage() {
     }
   }
 
-  if (isStarting) {
+  if (showCoachSelection) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Starting coaching session...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
-            <h2 className="text-xl font-semibold text-red-800 mb-2">Failed to Start Session</h2>
-            <p className="text-red-600 mb-4">{error}</p>
-            <div className="flex gap-4 justify-center">
-              <button
-                onClick={startSession}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Try Again
-              </button>
+      <div className="min-h-screen bg-gray-50">
+        <nav className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <h1 className="text-xl font-bold text-gray-900">BizDev</h1>
+              </div>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                className="text-sm text-gray-600 hover:text-gray-900"
               >
                 Back to Dashboard
               </button>
             </div>
           </div>
+        </nav>
+        <CoachSelection onSelect={startSession} isLoading={isStarting} />
+        {error && (
+          <div className="fixed bottom-4 right-4 bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg max-w-md">
+            <p className="text-red-800 font-medium">{error}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (!sessionId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Starting coaching session...</p>
         </div>
       </div>
     );
