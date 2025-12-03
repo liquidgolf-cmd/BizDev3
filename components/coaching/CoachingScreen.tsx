@@ -66,11 +66,29 @@ export default function CoachingScreen({ sessionId, onComplete }: CoachingScreen
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Failed to send message');
+        // Try to get error details from response
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          errorData = { error: `Server error (${response.status})` };
+        }
+        
+        console.error('[CoachingScreen] API error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+        });
+        
+        throw new Error(errorData.error || errorData.details || `Failed to send message (${response.status})`);
       }
 
       const data = await response.json();
+      console.log('[CoachingScreen] Received response:', { 
+        hasContent: !!data.content,
+        hasQuickReplies: !!data.quickReplies,
+        hasOutline: !!data.outline,
+      });
       const coachMessage: CoachMessage = {
         role: 'coach',
         content: data.content || 'No response received',
