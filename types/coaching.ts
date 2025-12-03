@@ -1,3 +1,5 @@
+import { BusinessProfile } from './business';
+
 // Coach Types
 export type CoachType = 
   | 'strategy' 
@@ -110,7 +112,7 @@ export interface CoachingSession {
   coachType?: CoachType;
   coachingStyle?: CoachingStyle;
   stage?: CoachingStage;
-  businessProfile?: import('./business').BusinessProfile;
+  businessProfile?: BusinessProfile;
   plan?: BusinessPlan | null; // Business strategic plan
   
   createdAt: Date;
