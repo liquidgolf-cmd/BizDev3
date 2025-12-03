@@ -210,19 +210,20 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
               return (
                 <div
                   key={coach.type}
-                  className={`text-left transition-all border-2 rounded-lg shadow-md hover:shadow-lg ${
+                  className={`text-left transition-all border-2 rounded-lg shadow-md hover:shadow-lg cursor-pointer ${
                     isSelected
                       ? 'ring-2 ring-green-600 border-green-500 bg-green-50'
                       : 'bg-white border-gray-200 hover:border-green-300'
                   }`}
+                  onClick={() => handleSelectCoach(coach.type)}
                 >
-                  {/* Card Content - Not clickable */}
+                  {/* Card Content */}
                   <div className="p-6">
                     <div className="flex items-center gap-3 mb-4">
                       <span className="text-2xl">{coach.icon}</span>
                       <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900">{coach.name}</h3>
-                    <p className="text-sm text-gray-600 font-medium">{coach.tagline}</p>
+                        <h3 className="text-xl font-semibold text-gray-900">{coach.name}</h3>
+                        <p className="text-sm text-gray-600 font-medium">{coach.tagline}</p>
                       </div>
                       {isSelected && (
                         <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -233,21 +234,12 @@ export default function CoachSelection({ onSelect, isLoading = false }: CoachSel
                       )}
                     </div>
 
-                    {/* Select Button */}
-                    <button
-                      onClick={() => handleSelectCoach(coach.type)}
-                      className={`w-full py-2 px-4 rounded-lg font-medium transition-colors mb-3 ${
-                        isSelected
-                          ? 'bg-green-600 text-white hover:opacity-90'
-                          : 'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      {isSelected ? 'Selected' : 'Select Coach'}
-                    </button>
-
                     {/* Expand/Collapse Button */}
                     <button
-                      onClick={() => handleToggleExpand(coach.type)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent card selection when clicking expand button
+                        handleToggleExpand(coach.type);
+                      }}
                       className="w-full flex items-center justify-between text-sm text-gray-600 font-medium hover:opacity-80 transition-opacity py-2"
                     >
                       <span>{isExpanded ? 'Hide details' : 'Show details'}</span>
