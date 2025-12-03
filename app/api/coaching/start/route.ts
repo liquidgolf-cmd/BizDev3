@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { CoachingAgent } from '@/lib/agents/coaching-agent';
 import { createSession } from '@/lib/firebase/db';
 import { v4 as uuidv4 } from 'uuid';
+import { CoachType, CoachingStyle } from '@/types/coaching';
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,8 +21,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get coachType and coachingStyle from request body
+    const body = await request.json().catch(() => ({}));
+    const coachType: CoachType = body.coachType || 'strategy';
+    const coachingStyle: CoachingStyle = body.coachingStyle || 'mentor';
+
+    // Validate coachType
+    const validCoachTypes: CoachType[] = ['strategy', 'brand', 'marketing', 'leadership', 'customer_experience'];
+    if (!validCoachTypes.includes(coachType)) {
+      return NextResponse.json(
+        { error: 'Invalid coach type' },
+        { status: 400 }
+      );
+    }
+
+    // Validate coachingStyle
+    const validStyles: CoachingStyle[] = ['mentor', 'realist', 'strategist'];
+    if (!validStyles.includes(coachingStyle)) {
+      return NextResponse.json(
+        { error: 'Invalid coaching style' },
+        { status: 400 }
+      );
+    }
+
     const sessionId = uuidv4();
-    const agent = new CoachingAgent(sessionId);
+    const agent = new CoachingAgent(sessionId, coachType, coachingStyle);
     const opening = await agent.startSession();
 
     // Create session in database
@@ -39,6 +63,11 @@ export async function POST(request: NextRequest) {
         status: 'in_progress',
         outline: null,
         extractedContext: null,
+        coachType,
+        coachingStyle,
+        stage: 'discovery',
+        businessProfile: undefined,
+        plan: null,
       }, sessionId);
     } catch (dbError: any) {
       console.error('Error saving session to database:', dbError);

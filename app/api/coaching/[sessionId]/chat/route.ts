@@ -39,10 +39,20 @@ export async function POST(
     }
 
     // Create agent and restore state
-    const agent = new CoachingAgent(sessionId);
+    const agent = new CoachingAgent(
+      sessionId,
+      dbSession.coachType || 'strategy',
+      dbSession.coachingStyle || 'mentor'
+    );
     agent.messages = dbSession.messages || [];
     agent.outline = dbSession.outline;
     agent.context = dbSession.extractedContext;
+    agent.businessProfile = dbSession.businessProfile || null;
+    agent.plan = dbSession.plan || null;
+    // Restore stage if available (using private property access via type assertion)
+    if (dbSession.stage) {
+      (agent as any).stage = dbSession.stage;
+    }
 
     // Process message
     let response;
@@ -59,21 +69,35 @@ export async function POST(
       throw agentError; // Re-throw to be caught by outer try-catch
     }
 
-    // Update session status if outline was generated
+    // Update session status based on stage and plan/outline generation
     let newStatus = dbSession.status;
-    if (response.outline && response.context) {
-      newStatus = 'outline_ready';
+    const currentStage = (agent as any).stage || dbSession.stage || 'discovery';
+    
+    // Update status based on what was generated
+    if (response.plan) {
+      newStatus = 'outline_ready'; // Business plan ready
+    } else if (response.outline && response.context) {
+      newStatus = 'outline_ready'; // Legacy web project outline ready
     }
 
-    // Update session in database
+    // Update session in database with all state
     await updateSession(sessionId, {
       messages: agent.messages,
       outline: agent.outline,
       extractedContext: agent.context,
+      businessProfile: agent.businessProfile || undefined,
+      plan: agent.plan,
+      stage: currentStage,
       status: newStatus,
     });
 
-    return NextResponse.json(response);
+    // Include stage in response if it changed
+    const responseWithStage = {
+      ...response,
+      stage: currentStage,
+    };
+
+    return NextResponse.json(responseWithStage);
   } catch (error: any) {
     // Log comprehensive error information
     const errorDetails = {
